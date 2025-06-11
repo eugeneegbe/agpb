@@ -1,0 +1,6 @@
+__pycache__
+node_modules
+instance/
+.venv
+/service/app.sqlite
+venv
