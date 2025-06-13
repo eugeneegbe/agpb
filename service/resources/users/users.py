@@ -1,7 +1,9 @@
 from flask import abort
+from flask_login import current_user
 from flask_restful import (Resource, reqparse,
                            fields, marshal_with)
 from service.models import UserModel
+from service.require_token import token_required
 from service import db
 
 # Used for validateion
@@ -18,8 +20,15 @@ userFields = {
 
 
 class UsersGet(Resource):
+    @token_required
     @marshal_with(userFields)
     def get(self):
+        print(current_user)
+
+        if not current_user.is_authenticated:
+            
+            abort(401, "User is not authenticated")
+
         users = UserModel.query.all()
         return users
 

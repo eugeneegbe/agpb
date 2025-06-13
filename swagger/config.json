@@ -44,6 +44,18 @@
     {
       "name": "language",
       "description": "Get specific language detils"
+    },
+    {
+      "name": "auth",
+      "description": "Authenticate with your wikidata account"
+    },
+    {
+      "name": "authcallback",
+      "description": "Callback for wikidata OAuth"
+    },
+    {
+      "name": "lexeme-create",
+      "description": "Create a new lexeme on Wikidata"
     }
   ],
   "paths": {
@@ -569,18 +581,9 @@
                     "type": "string",
                     "example": "Q1084"
                   },
-                  "auth_obj": {
-                    "type": "object",
-                    "properties": {
-                      "access_token": {
-                        "type": "string",
-                        "example": "cs2253657hfhgw53764763hdgjf"
-                      },
-                      "access_secret": {
-                        "type": "string",
-                        "example": "cs2253657hfhgw53764763hdgjf"
-                      }
-                    }
+                  "token": {
+                    "type": "string",
+                    "example": "034dc223fd1a0b3cc749aqw4tf26fddee684bf4e5+\\"
                   }
                 }
               }
@@ -763,9 +766,89 @@
           }
         ]
       }
+    },
+    "/auth/": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Authenticate user",
+        "responses": {
+          "200": {
+            "description": "Authenticated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "example": "https://www.wikidata.org/wiki/Special:OAuth/authorize?oauth_token=034dc223"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unavle to Authenticate with Wikidata"
+          }
+        }
+      }
+    },
+    "/oauth-callback": {
+      "get": {
+        "tags": [
+          "authcallback"
+        ],
+        "summary": "Callback for Wikidata OAuth",
+        "parameters": [
+          {
+            "name": "oauth_verifier",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "966f69de0024b50fd3c24ffa852062"
+            }
+          },
+          {
+            "name": "oauth_token",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "1625f69de0024b50fd3c24ffa852536"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Callback successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token": {
+                      "type": "string",
+                      "example": ".WJLKFJUHFLkljasdlkfjdsafjdslakfjlkasdjfajsdlkfjsadf"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
     }
   },
   "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
     "schemas": {
       "user": {
         "type": "object",

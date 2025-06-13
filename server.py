@@ -1,4 +1,4 @@
-from flask import redirect
+from flask import redirect, session, render_template
 from service import app, api, prefix
 from swagger.swaggerConfig import SwaggerConfig
 from service.resources.users.users import (UsersGet, UserPost, UserGet,
@@ -13,8 +13,12 @@ from service.resources.wikidata.lexeme import (LexemesGet, LexemesCreate,
                                                LexemeGlossesGet, LexemeFormAudioGet)
 
 from service.resources.commons.commons import CommonsFIleUrLPost
+from service.resources.auth.auth import AuthGet, AuthCallBackPost
 
 api.add_resource(SwaggerConfig, '/swagger-config')
+
+api.add_resource(AuthGet, '/auth/')
+api.add_resource(AuthCallBackPost, '/oauth-callback')
 
 api.add_resource(UsersGet, '/users/')
 api.add_resource(UserPost, '/users/')
@@ -41,9 +45,13 @@ api.add_resource(CommonsFIleUrLPost, '/file/url/<string:titles>')
 
 @app.route('/')
 def redirect_to_prefix():
-    print('redirecting to prefix')
-    if prefix != '':
+    username = session.get('username', None)
+
+    if prefix != '/api':
         return redirect(prefix)
+    return render_template('main/home.html',
+                           title='AGPB - Home',
+                           username=username)
 
 
 if __name__ == '__main__':

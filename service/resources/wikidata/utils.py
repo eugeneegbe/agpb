@@ -1,3 +1,4 @@
+import json
 import requests
 from wikidata.client import Client
 from common import (base_url, consumer_key,
@@ -141,10 +142,11 @@ def process_lexeme_form_data(search_term, data, src_lang, lang_1, lang_2):
         form_audio_list = []
 
         for lang in [src_lang, lang_1, lang_2]:
-            reps_match = {lang: {'language': lang, 'value': search_term}}
+            reps_match = {lang:{'language': lang, 'value': search_term}}
             audio_object = {}
             audio_object['language'] = lang
             if form['representations'] == reps_match and form['claims']:
+ 
                 form_claims_audios = form['claims']['P443']
 
                 potential_match_audio = []
@@ -155,14 +157,16 @@ def process_lexeme_form_data(search_term, data, src_lang, lang_1, lang_2):
 
                 best_match_audio = get_close_matches(lang + '-' + search_term,
                                                      potential_match_audio)
-                audio_object['audio'] = "File:" + best_match_audio[0] if \
-                    len(best_match_audio) > 1 else best_match_audio
+
+                # audio_object['audio'] = "File:" + best_match_audio[0] if \
+                #     len(best_match_audio) > 1 else potential_match_audio[0]
+                audio_object['audio'] = "File:" + best_match_audio[0]
+                form_audio_list.append(audio_object)
             else:
                 audio_object['audio'] = None
                 form_audio_list.append(audio_object)
   
         processed_data[form['id']] = form_audio_list
-
     return [processed_data]
 
 
@@ -185,12 +189,17 @@ def get_lexeme_forms_audio(search_term, lexeme_id, src_lang, lang_1, lang_2):
     return form_data
 
 
-def create_new_lexeme(language, value, categoryId, username, auth_obj):
-    csrf_token, api_auth_token = generate_csrf_token(base_url,
-                                                     consumer_key,
-                                                     consumer_secret,
-                                                     auth_obj['access_token'],
-                                                     auth_obj['access_secret'])
+def create_new_lexeme(language, value, categoryId, username, token):
+    """
+    Creates a new lexeme in Wikidata
+    Parameters:
+        language (str): The language of the lexeme
+        value (str): The value of the lexeme
+        categoryId (int): The ID of the lexical category
+        username (str): The username of the person creating the lexeme
+        token (str): The crsf token for the request   
+    """
+
     lex_data = {
         'lemmas': {
             language: {
@@ -206,16 +215,17 @@ def create_new_lexeme(language, value, categoryId, username, auth_obj):
     
     params = {}
     params['new'] = 'lexeme'
-    params['token'] = csrf_token
+    params['token'] = token
     params['action'] = 'wbeditentity'
-    params['data'] = lex_data
+    params['data'] = json.dumps(lex_data, ensure_ascii=False)
     params['summary'] = username + '@AGPB-' + app_version
 
     try:
         response = requests.post(base_url,
-                                 data=params,
-                                 auth=api_auth_token)
+                                 data=params)
+
     except Exception as e:
+        print('Error in creating lexeme', str(e))
         return {
             'info': 'Unable to edit. Please check credentials',
             'status_code': 503

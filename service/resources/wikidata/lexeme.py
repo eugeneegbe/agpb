@@ -20,7 +20,7 @@ lexeme_args.add_argument('lang_2', type=str, help="Provide the second language")
 lexeme_args.add_argument('ismatch', type=str, help="Match lexeme in language")
 
 lexeme_create_args.add_argument('value', type=str, help="Lexeme value text")
-lexeme_create_args.add_argument('auth_obj', type=dict, help="User auth object")
+lexeme_create_args.add_argument('token', type=str, help="User csrf toeken")
 lexeme_create_args.add_argument('username', type=str, help="User Name of editor")
 lexeme_create_args.add_argument('language', type=str, help="Lexeme language")
 lexeme_create_args.add_argument('categoryId', type=str, help="Lexeme Category")
@@ -82,11 +82,11 @@ class LexemesCreate(Resource):
         # TODO: Add arguments check
         if args['language'] is None or args['value'] is None \
             or args['categoryId'] is None \
-            or args['auth_obj'] is None or args['username'] is None:
+            or args['token'] is None or args['username'] is None:
             abort(400, f'Please provide required parameters {str(list(args.keys()))}')
 
         result = create_new_lexeme(args['language'], args['value'],
-                                   args['categoryId'], args['username'], args['auth_obj'])
+                                   args['categoryId'], args['username'], args['token'])
 
         if result['status_code'] == 503:
             return result, result['status_code']
@@ -113,11 +113,11 @@ class LexemeGlossesGet(Resource):
 class LexemeFormAudioGet(Resource):
     def post(self, id):
         args = form_audio_args.parse_args()
-        if args['search_term'] is not None or args['lang_1'] is not None or \
-           args['lang_2'] is not None or args['id'] is not None or \
-           args['src_lang'] is not None:
-            abort(400, f'Check required parameters {str(list(args.keys()))}')
-        
+        if args['search_term'] is None or args['lang_1'] is None or \
+           args['lang_2'] is None or args['id'] is None or \
+           args['src_lang'] is None or id is None:
+            abort(400, f'Check required title parameters {str(list(args.keys()))}')
+
         lexeme_audios = get_lexeme_forms_audio(args['search_term'], args['id'],
                                                args['src_lang'], args['lang_1'],
                                                args['lang_2'])

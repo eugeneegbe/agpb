@@ -1,12 +1,18 @@
 from datetime import datetime
 from service import db
+from flask_login import UserMixin
+from service import login_manager
 
+@login_manager.user_loader 
+def load_user(id):
+    return UserModel.objects(pk=id).first()
 
-class UserModel(db.Model):
+class UserModel(db.Model, UserMixin):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     pref_langs = db.Column(db.String(25), nullable=False)
+    temp_token = db.Column(db.String(100), nullable=True)
 
     def __repr__(self):
         return f"User(username= {self.username}, pref_langs={self.pre_langs})"

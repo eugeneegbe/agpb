@@ -21,7 +21,7 @@ class CommonsFIleUrLPost(Resource):
     def post(self, titles):
         args = media_args.parse_args()
         # TODO: Add arguments check
-        if args['titles'] is not None or titles is not None:
+        if args['titles'] is  None or titles is  None:
             abort(400, f'Please provide required parameters {str(list(args.keys()))}')
 
         media_data = get_media_url_by_title(args['titles'])

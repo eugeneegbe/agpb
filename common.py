@@ -16,6 +16,10 @@ class ENVIRONMENT:
         self.consumer_secret = os.getenv("COMSUMER_SECRET")
         self.app_version = os.getenv("APP_VERSION")
         self.app_secret = os.getenv("APP_SECRET")
+        self.is_dev = os.getenv("IS_DEV")
+        self.dev_fe_url = os.getenv("DEV_FE_URL")
+        self.auth_base_url = os.getenv("OAUTH_BASE_URL")
+        self.prod_fe_url = os.getenv("PROD_FE_URL")
 
     def get_instance(self):
         if not hasattr(self, "_instance"):
@@ -49,6 +53,17 @@ class ENVIRONMENT:
     def getAppVersion(self):
         return self.app_version
 
+    def getIsDev(self):
+        return self.is_dev
+    
+    def getDevFEUrl(self):
+        return self.dev_fe_url
+
+    def getProdFEUrl(self):
+        return self.prod_fe_url
+    
+    def getAuthBaseUrl(self):
+        return self.auth_base_url
 
 domain = ENVIRONMENT().get_instance().getDomain()
 port = ENVIRONMENT().get_instance().getPort()
@@ -59,6 +74,10 @@ consumer_key = ENVIRONMENT().get_instance().getConsumerKey()
 consumer_secret = ENVIRONMENT().get_instance().getConsumerSecret()
 app_version = ENVIRONMENT().get_instance().getAppVersion()
 app_secret = ENVIRONMENT().get_instance().getAppSecret()
+is_dev = ENVIRONMENT().get_instance().getIsDev()
+dev_fe_url = ENVIRONMENT().get_instance().getDevFEUrl()
+prod_fe_url = ENVIRONMENT().get_instance().getProdFEUrl()
+auth_base_url = ENVIRONMENT().get_instance().getAuthBaseUrl()
 
 
 def build_swagger_config_json():
