@@ -1,4 +1,4 @@
-# African German Phrabsebook
+# African German Phrabsebook v3.0
 
 To compile the src js to usable js:
 
