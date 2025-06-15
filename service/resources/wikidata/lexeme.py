@@ -111,20 +111,3 @@ class LexemeGlossesGet(Resource):
             abort(lexeme_glosses['status_code'], lexeme_glosses)
 
         return lexeme_glosses, 200
-
-
-class LexemeFormAudioGet(Resource):
-    def post(self, id):
-        args = form_audio_args.parse_args()
-        if args['search_term'] is None or args['lang_1'] is None or \
-           args['lang_2'] is None or args['id'] is None or \
-           args['src_lang'] is None or id is None:
-            abort(400, f'Check required title parameters {str(list(args.keys()))}')
-
-        lexeme_audios = get_lexeme_forms_audio(args['search_term'], args['id'],
-                                               args['src_lang'], args['lang_1'],
-                                               args['lang_2'])
-        if type(lexeme_audios) is not list:
-            abort(lexeme_audios['status_code'], lexeme_audios)
-
-        return lexeme_audios

@@ -15,7 +15,7 @@ user_args.add_argument('pref_langs', type=str, help="Provide a preffered languag
 userFields = {
     'id': fields.Integer,
     'username': fields.String,
-    'pre_langs': fields.String
+    'pref_langs': fields.String
 }
 
 
@@ -23,11 +23,10 @@ class UsersGet(Resource):
     @token_required
     @marshal_with(userFields)
     def get(self):
-        print(current_user)
-
         if not current_user.is_authenticated:
-            
-            abort(401, "User is not authenticated")
+            return {
+                "messae": "User is not authenticated"
+            }, 401
 
         users = UserModel.query.all()
         return users

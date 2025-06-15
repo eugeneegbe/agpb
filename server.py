@@ -10,15 +10,16 @@ from service.resources.contributions.contribution import (ContributionsGet,
                                                           ContributionDelete)
 from service.resources.languages.languages import LanguageGet, LanguagesGet
 from service.resources.wikidata.lexeme import (LexemesGet, LexemesCreate,
-                                               LexemeGlossesGet, LexemeFormAudioGet)
+                                               LexemeGlossesGet)
 
 from service.resources.commons.commons import CommonsFIleUrLPost
-from service.resources.auth.auth import AuthGet, AuthCallBackPost
+from service.resources.auth.auth import AuthGet, AuthCallBackPost, AuthLogout
 
 api.add_resource(SwaggerConfig, '/swagger-config')
 
-api.add_resource(AuthGet, '/auth/')
+api.add_resource(AuthGet, '/auth/login')
 api.add_resource(AuthCallBackPost, '/oauth-callback')
+api.add_resource(AuthLogout, '/auth/logout')
 
 api.add_resource(UsersGet, '/users/')
 api.add_resource(UserPost, '/users/')
@@ -38,7 +39,6 @@ api.add_resource(LanguageGet, '/languages/<string:lang_code>')
 api.add_resource(LexemesGet, '/lexemes/')
 api.add_resource(LexemesCreate, '/lexemes/create')
 api.add_resource(LexemeGlossesGet, '/lexemes/<string:id>')
-api.add_resource(LexemeFormAudioGet, '/forms/audio/<string:id>')
 
 api.add_resource(CommonsFIleUrLPost, '/file/url/<string:titles>')
 

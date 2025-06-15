@@ -30,16 +30,8 @@
       "description": "Fetch Lexeme glosses in other languages"
     },
     {
-      "name": "forms",
-      "description": "Fetch Lexeme Form Audios matching lang1 and lang2"
-    },
-    {
       "name": "file",
       "description": "Get file downloadable url from file name"
-    },
-    {
-      "name": "languages",
-      "description": "Get all the supported language"
     },
     {
       "name": "language",
@@ -48,10 +40,6 @@
     {
       "name": "auth",
       "description": "Authenticate with your wikidata account"
-    },
-    {
-      "name": "authcallback",
-      "description": "Callback for wikidata OAuth"
     },
     {
       "name": "lexeme-create",
@@ -65,6 +53,17 @@
           "user"
         ],
         "summary": "Retrieve all users",
+        "parameters": [
+          {
+            "name": "x-access-tokens",
+            "in": "header",
+            "required": true,
+            "description": "User access token",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful",
@@ -450,7 +449,7 @@
     "/languages": {
       "get": {
         "tags": [
-          "languages"
+          "language"
         ],
         "summary": "Retrieve all language",
         "responses": {
@@ -665,65 +664,6 @@
         ]
       }
     },
-    "/forms/audio/{id}": {
-      "post": {
-        "tags": [
-          "forms"
-        ],
-        "summary": "Retrieve specific form audio",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "search_term": {
-                    "type": "string",
-                    "example": "mother"
-                  },
-                  "id": {
-                    "type": "string",
-                    "example": "L3625"
-                  },
-                  "src_lang": {
-                    "type": "string",
-                    "example": "en"
-                  },
-                  "lang_1": {
-                    "type": "string",
-                    "example": "de"
-                  },
-                  "lang_2": {
-                    "type": "string",
-                    "example": "fr"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/forms"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Glosses not found"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ]
-      }
-    },
     "/file/url/{titles}": {
       "post": {
         "tags": [
@@ -767,7 +707,7 @@
         ]
       }
     },
-    "/auth/": {
+    "/auth/login": {
       "get": {
         "tags": [
           "auth"
@@ -794,7 +734,7 @@
     "/oauth-callback": {
       "get": {
         "tags": [
-          "authcallback"
+          "auth"
         ],
         "summary": "Callback for Wikidata OAuth",
         "parameters": [
@@ -836,6 +776,30 @@
           },
           "401": {
             "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Logout user",
+        "responses": {
+          "200": {
+            "description": "Logout successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "example": "Successfully logged out"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unable to Logout"
           }
         }
       }
@@ -932,23 +896,6 @@
           "description": {
             "type": "string",
             "example": "Turkish, nyaa\u014ba bi\u025blimpahirili"
-          }
-        }
-      },
-      "forms": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "example": "L3625-F1"
-          },
-          "language": {
-            "type": "string",
-            "example": "en"
-          },
-          "audio": {
-            "type": "string",
-            "example": "En-uk-mother.ogg"
           }
         }
       },
