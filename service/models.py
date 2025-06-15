@@ -6,7 +6,7 @@ from service import login_manager
 
 @login_manager.user_loader
 def load_user(id):
-    return UserModel.objects(pk=id).first()
+    return UserModel.query.get(id)
 
 
 class UserModel(db.Model, UserMixin):

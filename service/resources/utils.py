@@ -2,6 +2,30 @@ import requests
 from requests_oauthlib import OAuth1
 
 
+def make_api_request(url, PARAMS):
+    """ Makes request to an end point to get data
+
+        Parameters:
+            url (str): The Api url end point
+            PARAMS (obj): The parameters to be used as arguments
+
+        Returns:
+            data (obj): Json object of the recieved data.
+    """
+
+    try:
+        S = requests.Session()
+        r = S.get(url=url, params=PARAMS)
+        data = r.json()
+    except Exception as e:
+        return {
+            'info': str(e),
+            'status_code': 503
+        }
+
+    return data
+
+
 def generate_csrf_token(url, app_key, app_secret, user_key, user_secret):
     '''
     Generate CSRF token for edit request

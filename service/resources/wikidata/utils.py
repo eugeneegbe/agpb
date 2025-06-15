@@ -2,33 +2,11 @@ import json
 import requests
 from wikidata.client import Client
 from common import (base_url, consumer_key, wm_commons_image_base_url,
-                    consumer_secret, app_version)
+                    consumer_secret, app_version, wm_commons_audio_base_url)
 from difflib import get_close_matches
+from service.resources.utils import make_api_request
+from service.resources.commons.utils import get_media_url_by_title
 from service.resources.utils import generate_csrf_token
-
-
-def make_api_request(url, PARAMS):
-    """ Makes request to an end point to get data
-
-        Parameters:
-            url (str): The Api url end point
-            PARAMS (obj): The parameters to be used as arguments
-
-        Returns:
-            data (obj): Json object of the recieved data.
-    """
-
-    try:
-        S = requests.Session()
-        r = S.get(url=url, params=PARAMS)
-        data = r.json()
-    except Exception as e:
-        return {
-            'info': str(e),
-            'status_code': 503
-        }
-
-    return data
 
 
 def process_search_results(search_results, search, src_lang, ismatch_search):
@@ -97,28 +75,39 @@ def get_image_url(file_name):
     return f"{wm_commons_image_base_url}{file_name}"
 
 
-def process_lexeme_sense_data(senses_data, lang_1, lang_2, image):
+def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
     """
     """
     processed_data = {}
     lexeme = {
-        'id': senses_data['id'],
-        'lexicalCategoryId': senses_data['lexicalCategory'],
-        'lexicalCategoryLabel': get_item_label(senses_data['lexicalCategory']),
+        'id': lexeme_data['id'],
+        'lexicalCategoryId': lexeme_data['lexicalCategory'],
+        'lexicalCategoryLabel': get_item_label(lexeme_data['lexicalCategory']),
         'image': get_image_url(image[0]['mainsnak']['datavalue']['value'])
     }
 
     processed_data['lexeme'] = lexeme
     processed_data['gloss'] = []
 
-    for sense in senses_data['senses']:
+    for sense in lexeme_data['senses']:
         sense_base = {}
         sense_base['id'] = sense['id']
         sense_gloss = sense['glosses']
         if sense_gloss:
-            for lang in [lang_1, lang_2]:
+            for lang in [src_lang, lang_1, lang_2]:
                 if lang in sense_gloss:
                     processed_data['gloss'].append(sense_gloss[lang])
+
+    #  TODO: Add audio data
+    for gloss in processed_data['gloss']:
+        for form in lexeme_data['forms']:
+            gloss['formId'] = form['id']
+            if gloss['language'] in form['representations']:
+                if form['claims'] and 'P443' in form['claims']:
+                    audio = form['claims']['P443'][0]['mainsnak']['datavalue']['value']
+                    gloss['audio'] = wm_commons_audio_base_url + audio
+            else:
+                gloss['audio'] = None
     return [processed_data]
 
 
@@ -142,7 +131,7 @@ def get_lexeme_sense_glosses(lexeme_id, src_lang, lang_1, lang_2):
         image = lexeme_senses_data['entities'][lexeme_id]['senses'][0]['claims']['P18']
 
     glosses_data = process_lexeme_sense_data(lexeme_senses_data['entities'][lexeme_id],
-                                             lang_1, lang_2, image)
+                                             src_lang, lang_1, lang_2, image)
     return glosses_data
 
 
@@ -236,9 +225,8 @@ def create_new_lexeme(language, value, categoryId, username, token):
                                  data=params)
 
     except Exception as e:
-        print('Error in creating lexeme', str(e))
         return {
-            'info': 'Unable to edit. Please check credentials',
+            'info': 'Unable to edit. Please check credentials' + str(e),
             'status_code': 503
         }
 

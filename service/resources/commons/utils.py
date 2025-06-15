@@ -1,12 +1,12 @@
 import io
 import requests
-from ..wikidata.utils import make_api_request
+from service.resources.wikidata.utils import make_api_request
 from common import commons_url, consumer_key, consumer_secret
 from service.resources.utils import generate_csrf_token
 
 
 def get_media_url_by_title(file_titles):
- 
+    print("Fetching media URLs for titles:", file_titles)
     PARAMS = {
         "action": "query",
         "titles": file_titles,
@@ -25,9 +25,12 @@ def get_media_url_by_title(file_titles):
     for page in media_pages:
         media_object = {}
         media_id = list(media_data["query"]["pages"].keys())[0]
-
         media_title = media_pages[page]['title']
-        media_url = media_pages[media_id]['imageinfo'][0]['url']
+
+        if 'imageinfo' not in media_pages[media_id]:
+            media_url = None
+        else:
+            media_url = media_pages[media_id]['imageinfo'][0]['url']
 
         media_object['title'] = media_title
         media_object['url'] = media_url if media_url else None

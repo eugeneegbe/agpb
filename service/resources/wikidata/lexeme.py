@@ -43,6 +43,8 @@ lexeme_response_fields = {
     'gloss': fields.List(fields.Nested({
         'language': fields.String,
         'value': fields.String,
+        'audio': fields.String,
+        'formId': fields.String,
     })),
 }
 
