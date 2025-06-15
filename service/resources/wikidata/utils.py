@@ -1,7 +1,7 @@
 import json
 import requests
 from wikidata.client import Client
-from common import (base_url, consumer_key,
+from common import (base_url, consumer_key, wm_commons_image_base_url,
                     consumer_secret, app_version)
 from difflib import get_close_matches
 from service.resources.utils import generate_csrf_token
@@ -90,15 +90,24 @@ def get_item_label(id):
     return None
 
 
-def process_lexeme_sense_data(senses_data, lang_1, lang_2):
+def get_image_url(file_name):
+    """
+    Returns the image url from the image file name.
+    """
+    return f"{wm_commons_image_base_url}{file_name}"
+
+
+def process_lexeme_sense_data(senses_data, lang_1, lang_2, image):
     """
     """
     processed_data = {}
     lexeme = {
         'id': senses_data['id'],
         'lexicalCategoryId': senses_data['lexicalCategory'],
-        'lexicalCategoryLabel': get_item_label(senses_data['lexicalCategory'])
+        'lexicalCategoryLabel': get_item_label(senses_data['lexicalCategory']),
+        'image': get_image_url(image[0]['mainsnak']['datavalue']['value'])
     }
+
     processed_data['lexeme'] = lexeme
     processed_data['gloss'] = []
 
@@ -110,7 +119,6 @@ def process_lexeme_sense_data(senses_data, lang_1, lang_2):
             for lang in [lang_1, lang_2]:
                 if lang in sense_gloss:
                     processed_data['gloss'].append(sense_gloss[lang])
-
     return [processed_data]
 
 
@@ -130,8 +138,11 @@ def get_lexeme_sense_glosses(lexeme_id, src_lang, lang_1, lang_2):
     if 'status_code' in list(lexeme_senses_data.keys()):
         return lexeme_senses_data
 
+    if 'P18' in lexeme_senses_data['entities'][lexeme_id]['senses'][0]['claims']:
+        image = lexeme_senses_data['entities'][lexeme_id]['senses'][0]['claims']['P18']
+
     glosses_data = process_lexeme_sense_data(lexeme_senses_data['entities'][lexeme_id],
-                                             lang_1, lang_2)
+                                             lang_1, lang_2, image)
     return glosses_data
 
 
@@ -142,7 +153,7 @@ def process_lexeme_form_data(search_term, data, src_lang, lang_1, lang_2):
         form_audio_list = []
 
         for lang in [src_lang, lang_1, lang_2]:
-            reps_match = {lang:{'language': lang, 'value': search_term}}
+            reps_match = {lang: {'language': lang, 'value': search_term}}
             audio_object = {}
             audio_object['language'] = lang
             if form['representations'] == reps_match and form['claims']:
@@ -197,7 +208,7 @@ def create_new_lexeme(language, value, categoryId, username, token):
         value (str): The value of the lexeme
         categoryId (int): The ID of the lexical category
         username (str): The username of the person creating the lexeme
-        token (str): The crsf token for the request   
+        token (str): The crsf token for the request
     """
 
     lex_data = {

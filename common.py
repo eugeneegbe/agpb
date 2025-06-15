@@ -20,6 +20,7 @@ class ENVIRONMENT:
         self.dev_fe_url = os.getenv("DEV_FE_URL")
         self.auth_base_url = os.getenv("OAUTH_BASE_URL")
         self.prod_fe_url = os.getenv("PROD_FE_URL")
+        self.commons_image_base_url = os.getenv("WM_COMMONS_IMAGE_BASE_URL")
 
     def get_instance(self):
         if not hasattr(self, "_instance"):
@@ -64,6 +65,10 @@ class ENVIRONMENT:
     
     def getAuthBaseUrl(self):
         return self.auth_base_url
+    
+    def getCommonsImageBaseUrl(self):
+        return self.commons_image_base_url
+
 
 domain = ENVIRONMENT().get_instance().getDomain()
 port = ENVIRONMENT().get_instance().getPort()
@@ -78,6 +83,7 @@ is_dev = ENVIRONMENT().get_instance().getIsDev()
 dev_fe_url = ENVIRONMENT().get_instance().getDevFEUrl()
 prod_fe_url = ENVIRONMENT().get_instance().getProdFEUrl()
 auth_base_url = ENVIRONMENT().get_instance().getAuthBaseUrl()
+wm_commons_image_base_url = ENVIRONMENT().get_instance().getCommonsImageBaseUrl()
 
 
 def build_swagger_config_json():

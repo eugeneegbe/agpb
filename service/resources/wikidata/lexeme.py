@@ -38,6 +38,7 @@ lexeme_response_fields = {
         'id': fields.String,
         'lexicalCategoryId': fields.String,
         'lexicalCategoryLabel': fields.String,
+        'image': fields.String,
     }),
     'gloss': fields.List(fields.Nested({
         'language': fields.String,
@@ -80,9 +81,9 @@ class LexemesCreate(Resource):
         args = lexeme_create_args.parse_args()
 
         # TODO: Add arguments check
-        if args['language'] is None or args['value'] is None \
-            or args['categoryId'] is None \
-            or args['token'] is None or args['username'] is None:
+        if args['language'] is None or args['value'] is None or \
+           args['categoryId'] is None or \
+           args['token'] is None or args['username'] is None:
             abort(400, f'Please provide required parameters {str(list(args.keys()))}')
 
         result = create_new_lexeme(args['language'], args['value'],

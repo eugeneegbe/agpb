@@ -9,7 +9,7 @@ from flask_restful import (Resource, reqparse,
 from service.models import UserModel
 from service import db
 from common import (auth_base_url, consumer_key, dev_fe_url, prod_fe_url,
-                     consumer_secret, is_dev)
+                    consumer_secret, is_dev)
 from flask import redirect, request, session, make_response, jsonify
 from flask_login import current_user, login_user, logout_user
 from .utils import generate_random_token
@@ -29,10 +29,10 @@ class AuthGet(Resource):
     def get(self):
         if current_user.is_authenticated:
             user = UserModel.query.filter_by(username=current_user.username).first()
-            token = jwt.encode({'token' : user.temp_token,
+            token = jwt.encode({'token': user.temp_token,
                                 'access_token': session.get('access_token', None),
-                                'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=45)},
-                                consumer_secret, "HS256")
+                                'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=45)},
+                               consumer_secret, "HS256")
 
             redirect_base_url = dev_fe_url if is_dev else prod_fe_url
             response = redirect(redirect_base_url + "/oauth/callback?token=" + str(token), code=302)
@@ -45,7 +45,7 @@ class AuthGet(Resource):
                 redirect_string, request_token = mwoauth.initiate(
                     auth_base_url, consumer_token)
             except Exception as e:
-                abort(400, 'mwoauth.initiate failed ')
+                abort(400, 'mwoauth.initiate failed: ' + str(e))
             session['request_token'] = dict(zip(
                 request_token._fields, request_token))
 
@@ -74,14 +74,14 @@ class AuthCallBackPost(Resource):
 
         except Exception as e:
             return {
-                'message': 'OAuth callback failed. Are cookies disabled?',
-                }, 404
+                'message': 'OAuth callback failed. Are cookies disabled? ' + str(e)
+            }, 404
 
         else:
             session['access_token'] = dict(zip(
                 access_token._fields, access_token))
             session['username'] = identity['username']
-            # Username was obtained make attempt to add 
+            # Username was obtained make attempt to add
             if session.get('username'):
                 user = UserModel.query.filter_by(username=session.get('username')).first()
                 if not user:
@@ -97,11 +97,10 @@ class AuthCallBackPost(Resource):
             user = UserModel.query.filter_by(username=session.get('username')).first()
             user.temp_token = generate_random_token()
 
-            token = jwt.encode({
-                    'token' : user.temp_token,
-                    'access_token': session.get('access_token', None),
-                    'exp' : datetime.now() + timedelta(minutes=45)},
-                    consumer_secret, "HS256")
+            token = jwt.encode({'token': user.temp_token,
+                                'access_token': session.get('access_token', None),
+                                'exp': datetime.now() + timedelta(minutes=45)},
+                               consumer_secret, "HS256")
 
             if user:
                 login_user(user)

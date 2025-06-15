@@ -4,6 +4,7 @@ from ..wikidata.utils import make_api_request
 from common import commons_url, consumer_key, consumer_secret
 from service.resources.utils import generate_csrf_token
 
+
 def get_media_url_by_title(file_titles):
  
     PARAMS = {

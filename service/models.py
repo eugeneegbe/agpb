@@ -3,9 +3,11 @@ from service import db
 from flask_login import UserMixin
 from service import login_manager
 
-@login_manager.user_loader 
+
+@login_manager.user_loader
 def load_user(id):
     return UserModel.objects(pk=id).first()
+
 
 class UserModel(db.Model, UserMixin):
     __tablename__ = 'users'
