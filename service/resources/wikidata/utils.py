@@ -214,7 +214,7 @@ def create_new_lexeme(language, value, categoryId, username, auth_obj):
                                            auth_obj['access_secret'])
     _, _, lqid = get_language_qid(language)
 
-    lexeme_entry =  {
+    lexeme_entry = {
         'lemmas': {
             language: {
                 'language': language,
@@ -238,7 +238,7 @@ def create_new_lexeme(language, value, categoryId, username, auth_obj):
     
     if 'error' in response:
         return {
-            'info': 'Unable to edit. Please check credentials' + str(e),
+            'info': 'Unable to edit. Please check credentials',
             'status_code': 503
         }
 

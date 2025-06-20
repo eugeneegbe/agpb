@@ -22,7 +22,7 @@ userFields = {
 class UsersGet(Resource):
     @token_required
     @marshal_with(userFields)
-    def get(self):
+    def get(self, data):
         if not current_user.is_authenticated:
             return {
                 "messae": "User is not authenticated"

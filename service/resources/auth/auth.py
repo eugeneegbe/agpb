@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 import mwoauth
 import json
 import jwt
-from flask import abort, jsonify
+from flask import abort, jsonify, request, session, make_response
 
 from flask_restful import (Resource, reqparse,
                            fields, marshal_with)
@@ -10,7 +10,6 @@ from service.models import UserModel
 from service import db
 from common import (auth_base_url, consumer_key, dev_fe_url, prod_fe_url,
                     consumer_secret, is_dev)
-from flask import redirect, request, session, make_response, jsonify
 from flask_login import current_user, login_user, logout_user
 from .utils import generate_random_token
 
@@ -31,7 +30,7 @@ class AuthGet(Resource):
             user = UserModel.query.filter_by(username=current_user.username).first()
             token = jwt.encode({'token': user.temp_token,
                                 'access_token': session.get('access_token', None),
-                                'exp' : datetime.utcnow() + timedelta(minutes=45)},
+                                'exp': datetime.utcnow() + timedelta(minutes=45)},
                                consumer_secret, "HS256")
 
             redirect_base_url = dev_fe_url if is_dev else prod_fe_url
@@ -63,7 +62,7 @@ class AuthCallBackPost(Resource):
         if current_user.is_authenticated:
             token = jwt.encode({'token': current_user.temp_token,
                                 'access_token': session.get('access_token', None),
-                                'exp' : datetime.utcnow() + timedelta(minutes=45)},
+                                'exp': datetime.utcnow() + timedelta(minutes=45)},
                                consumer_secret, "HS256")
 
             return {
@@ -103,8 +102,8 @@ class AuthCallBackPost(Resource):
             db.session.commit()
             token = jwt.encode({'token': user.temp_token,
                                 'access_token': session.get('access_token', None),
-                                'exp' : datetime.utcnow() + timedelta(minutes=45)},
-                                consumer_secret, "HS256")
+                                'exp': datetime.utcnow() + timedelta(minutes=45)},
+                               consumer_secret, "HS256")
             login_user(user)
             return {
                 'token': token
@@ -123,8 +122,8 @@ class AuthCallBackPost(Resource):
                 }, 400
             token = jwt.encode({'token': user.temp_token,
                                 'access_token': session.get('access_token', None),
-                                'exp' : datetime.utcnow() + timedelta(minutes=45)},
-                                consumer_secret, "HS256")
+                                'exp': datetime.utcnow() + timedelta(minutes=45)},
+                               consumer_secret, "HS256")
             login_user(user)
             return {
                 'token': token
