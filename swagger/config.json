@@ -856,6 +856,60 @@
           }
         }
       }
+    },
+    "/lexeme/audio/add": {
+      "post": {
+        "tags": [
+          "lexeme"
+        ],
+        "summary": "Add audio to lexeme forms in language ",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "lang_wdqid": {
+                    "type": "string",
+                    "example": "Q1860"
+                  },
+                  "lang_label": {
+                    "type": "string",
+                    "example": "German"
+                  },
+                  "formid": {
+                    "type": "string",
+                    "example": "L3625-F1"
+                  },
+                  "filename": {
+                    "type": "string",
+                    "example": "En-us-'cause.ogg"
+                  },
+                  "file_content": {
+                    "type": "string",
+                    "example": "b'//X01112//YZ22ddfgqkkl'"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/lexemes_create"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Audio could not be added"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1038,6 +1092,9 @@
                   "type": "string"
                 },
                 "lexeme": {
+                  "type": "string"
+                },
+                "formId": {
                   "type": "string"
                 }
               }

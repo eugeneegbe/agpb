@@ -6,7 +6,7 @@ from common import (base_url, consumer_key, wm_commons_image_base_url,
 from difflib import get_close_matches
 from service.utils.languages import getLanguages
 from service.resources.utils import make_api_request
-from service.resources.commons.utils import get_media_url_by_title
+from service.resources.commons.utils import upload_file
 from service.resources.utils import generate_csrf_token
 
 
@@ -42,6 +42,7 @@ def get_lexemes_lacking_audio(lang_qid, limit=50, offset=0):
         for form in data:
             form_entries.append({
                 'lexeme': form['lexeme']['value'].split('/')[-1],
+                'formId': form['form']['value'].splilt('/')[-1],
                 'lemma': form['lemma']['value']
             })
         audio_result['forms'] = form_entries
@@ -288,3 +289,69 @@ def create_new_lexeme(language, value, categoryId, username, auth_obj):
     return {
         'revisionid': response['entity']['lastrevid']
     }
+
+
+def add_audio_to_lexeme(username, language_qid, lang_label,
+                        data, form_id, auth_object, file_name):
+
+    csrf_token, api_auth_token = generate_csrf_token(base_url,
+                                                     consumer_key,
+                                                     consumer_secret,
+                                                     auth_object['access_token'],
+                                                     auth_object['access_secret'])
+    params = {}
+    params['format'] = 'json'
+    params['token'] = csrf_token
+    params['summary'] = username + '@AGPB-v' + app_version
+    params['action'] = 'wbcreateclaim'
+    params['entity'] = form_id
+    params['property'] = 'P443'
+    params['snaktype'] = 'value'
+    params['value'] = '"' + file_name + '"'
+
+    revision_id = None
+
+    upload_response = upload_file(data, username, lang_label, auth_object, file_name)
+
+    if upload_response is False:
+        return {
+            'error': 'Upload failed'
+        }
+
+    claim_response = requests.post(base_url, data=params, auth=api_auth_token)
+
+    if 'error' in claim_response.json().keys():
+        return {
+            'error': str(claim_response.json()['error']['code']
+                         .capitalize() + ': ' + claim_response.json()['error']['info']
+                         .capitalize())
+        }
+
+    claim_result = claim_response.json()
+
+    # get language item here from lang_code
+    qualifier_value = language_qid
+    qualifier_params = {}
+    qualifier_params['claim'] = claim_result['claim']['id']
+    qualifier_params['action'] = 'wbsetqualifier'
+    qualifier_params['property'] = 'P407'
+    qualifier_params['snaktype'] = 'value'
+    qualifier_params['value'] = json.dumps({'entity-type': 'item', 'id': qualifier_value})
+    qualifier_params['format'] = 'json'
+    qualifier_params['token'] = csrf_token
+    qualifier_params['summary'] = username + '@AGPB-v' + app_version
+
+    qual_response = requests.post(base_url, data=qualifier_params,
+                                  auth=api_auth_token)
+
+    qualifier_params = qual_response.json()
+
+    if qual_response.status_code != 200:
+        {'error': 'Qualifier could not be added'}
+    if 'success' in qualifier_params.keys():
+        revision_id = qualifier_params.get('pageinfo').get('lastrevid', None)
+        return {'revisionid': revision_id}
+    else:
+        return {
+            'error': "Error: " + str(qual_response.json()['error']['info'].capitalize())
+        }

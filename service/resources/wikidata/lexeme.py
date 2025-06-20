@@ -6,15 +6,18 @@ from flask_restful import (Resource, reqparse,
                            fields, marshal_with)
 from service.require_token import token_required
 from .utils import (lexemes_search, get_lexeme_sense_glosses,
-                    create_new_lexeme, get_lexemes_lacking_audio)
+                    create_new_lexeme, get_lexemes_lacking_audio,
+                    add_audio_to_lexeme, get_language_qid)
 from common import consumer_key, consumer_secret
 from service.models import ContributionModel
+
 
 # Used for validateion
 lexeme_args = reqparse.RequestParser()
 form_audio_args = reqparse.RequestParser()
 lexeme_create_args = reqparse.RequestParser()
-lex_form_without_audio = reqparse.RequestParser()
+lex_form_without_audio_args = reqparse.RequestParser()
+lex_audio_add_args = reqparse.RequestParser()
 
 lexeme_args.add_argument('search', type=str, help="Please provide a search term")
 lexeme_args.add_argument('src_lang', type=str, help="Source language is required")
@@ -35,9 +38,15 @@ form_audio_args.add_argument('src_lang', type=str, help="Source language is requ
 form_audio_args.add_argument('lang_1', type=str, help="Provide the first language")
 form_audio_args.add_argument('lang_2', type=str, help="Provide the second language")
 
-lex_form_without_audio.add_argument('lang_wdqid', type=str, help="Wikidata language Qid")
-lex_form_without_audio.add_argument('limit', type=int, help="Query result limit")
-lex_form_without_audio.add_argument('offset', type=int, help="Query result offset for pagination")
+lex_form_without_audio_args.add_argument('lang_wdqid', type=str, help="Wikidata language Qid")
+lex_form_without_audio_args.add_argument('limit', type=int, help="Query result limit")
+lex_form_without_audio_args.add_argument('offset', type=int, help="Query result offset for pagination")
+
+lex_audio_add_args.add_argument('lang_wdqid', type=str, help="Wikidata language Qid")
+lex_audio_add_args.add_argument('lang_label', type=str, help="Language label")
+lex_audio_add_args.add_argument('data', type=str, help="Audio data in bytes")
+lex_audio_add_args.add_argument('formid', type=str, help="Lexeme Form Id")
+lex_audio_add_args.add_argument('filename', type=str, help="Composed file name f the uploaded file")
 
 
 lexeme_response_fields = {
@@ -67,11 +76,15 @@ lexemeCreateFields = {
     'revisionid': fields.Integer
 }
 
+LexemeAudioAddFields = {
+
+}
 
 lexemeNoAudioFields = {
     'forms': fields.List(fields.Nested({
         'lemma': fields.String,
-        'lexeme': fields.String
+        'lexeme': fields.String,
+        'formid': fields.String
     }))
 }
 
@@ -150,10 +163,10 @@ class LexemeGlossesGet(Resource):
         return lexeme_glosses, 200
 
 
-class LexemeFormsAudiosContrib(Resource):
+class LexemeFormsAudiosLackGet(Resource):
     @marshal_with(lexemeNoAudioFields)
     def post(self):
-        args = lex_form_without_audio.parse_args()
+        args = lex_form_without_audio_args.parse_args()
         if args['lang_wdqid'] is None or args['limit'] is None or args['offset'] is None:
             abort(400, f'Please provide required parameters {str(list(args.keys()))}')
 
@@ -163,4 +176,37 @@ class LexemeFormsAudiosContrib(Resource):
         if 'error' in results:
             abort(results['status_code'], results)
 
+        return results, 200
+
+
+class LexemeAudioAdd(Resource):
+    @token_required
+    @marshal_with(LexemeAudioAddFields)
+    def post(self):
+        args = lex_form_without_audio_args.parse_args()
+        if args['lang_wdqid'] is None or args['lang_label'] is None or \
+           args['data'] is None or args['formid'] is None or \
+           args['filename'] is None:
+            abort(400, f'Please provide required parameters {str(list(args.keys()))}')
+
+        # get request header token_required info
+        token = request.headers.get('x-access-tokens')
+
+        decoded_token = jwt.decode(token, consumer_secret, algorithms=["HS256"])
+        if 'access_token' not in decoded_token:
+            return {
+                'message': 'Access token is missing in the decoded token'
+            }, 400
+
+        auth_obj = {
+            "access_token": decoded_token.get('access_token')['key'],
+            "access_secret": decoded_token.get('access_token')['secret'],
+        }
+
+        results = add_audio_to_lexeme(current_user.username, args['lang_wdqid'],
+                                      args['lang_label'], args['data'], args['formid'],
+                                      auth_obj, args['filename'])
+
+        if 'error' in results:
+            abort(results['status_code'], results)
         return results, 200
