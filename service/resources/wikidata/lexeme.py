@@ -1,9 +1,12 @@
-from flask import abort, jsonify
+from flask import abort, request
+from flask_login import current_user
+import jwt
 from flask_restful import (Resource, reqparse,
                            fields, marshal_with)
-
+from service.require_token import token_required
 from .utils import (lexemes_search, get_lexeme_sense_glosses,
-                    get_lexeme_forms_audio, create_new_lexeme)
+                    create_new_lexeme)
+from common import consumer_key, consumer_secret
 
 
 # Used for validateion
@@ -20,11 +23,9 @@ lexeme_args.add_argument('lang_2', type=str, help="Provide the second language")
 lexeme_args.add_argument('ismatch', type=str, help="Match lexeme in language")
 
 lexeme_create_args.add_argument('value', type=str, help="Lexeme value text")
-lexeme_create_args.add_argument('token', type=str, help="User csrf toeken")
 lexeme_create_args.add_argument('username', type=str, help="User Name of editor")
 lexeme_create_args.add_argument('language', type=str, help="Lexeme language")
 lexeme_create_args.add_argument('categoryId', type=str, help="Lexeme Category")
-
 
 form_audio_args.add_argument('search_term', type=str, help="Provide a search term")
 form_audio_args.add_argument('id', type=str, help="Lexeme ID is required")
@@ -79,17 +80,33 @@ class LexemesGet(Resource):
 
 
 class LexemesCreate(Resource):
+    @token_required
     def post(self):
         args = lexeme_create_args.parse_args()
 
         # TODO: Add arguments check
         if args['language'] is None or args['value'] is None or \
-           args['categoryId'] is None or \
-           args['token'] is None or args['username'] is None:
+           args['categoryId'] is None or args['username'] is None:
             abort(400, f'Please provide required parameters {str(list(args.keys()))}')
 
+        # get request header token_required info
+        token = request.headers.get('x-access-tokens')
+
+        decoded_token = jwt.decode(token, consumer_secret, algorithms=["HS256"])
+        if 'access_token' not in decoded_token:
+            return {
+                'message': 'Access token is missing in the decoded token'
+            }, 400
+
+        auth_obj = {
+            "consumer_key": consumer_key,
+            "consumer_secret": consumer_secret,
+            "access_token": decoded_token.get('access_token')['key'],
+            "access_secret": decoded_token.get('access_token')['secret'],
+        }
+
         result = create_new_lexeme(args['language'], args['value'],
-                                   args['categoryId'], args['username'], args['token'])
+                                   args['categoryId'], current_user.username, auth_obj)
 
         if result['status_code'] == 503:
             return result, result['status_code']

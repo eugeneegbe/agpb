@@ -40,10 +40,6 @@
     {
       "name": "auth",
       "description": "Authenticate with your wikidata account"
-    },
-    {
-      "name": "lexeme-create",
-      "description": "Create a new lexeme on Wikidata"
     }
   ],
   "paths": {
@@ -555,9 +551,20 @@
     "/lexemes/create": {
       "post": {
         "tags": [
-          "lexeme-create"
+          "lexeme"
         ],
         "summary": "Create a new lexeme on Wikidata",
+        "parameters": [
+          {
+            "name": "x-access-tokens",
+            "in": "header",
+            "required": true,
+            "description": "User access token",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -579,10 +586,6 @@
                   "categoryId": {
                     "type": "string",
                     "example": "Q1084"
-                  },
-                  "token": {
-                    "type": "string",
-                    "example": "034dc223fd1a0b3cc749aqw4tf26fddee684bf4e5+\\"
                   }
                 }
               }

@@ -9,7 +9,7 @@ from service.models import UserModel
 def token_required(f):
     @wraps(f)
     def inner(*args, **kwargs):
-
+        token = None
         if 'x-access-tokens' in request.headers:
             token = request.headers['x-access-tokens']
         if not token:

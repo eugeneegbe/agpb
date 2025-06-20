@@ -4,14 +4,15 @@ from wikidata.client import Client
 from common import (base_url, consumer_key, wm_commons_image_base_url,
                     consumer_secret, app_version, wm_commons_audio_base_url)
 from difflib import get_close_matches
+from service.utils.languages import getLanguages
 from service.resources.utils import make_api_request
 from service.resources.commons.utils import get_media_url_by_title
 from service.resources.utils import generate_csrf_token
 
 
 def process_search_results(search_results, search, src_lang, ismatch_search):
-    """
-    """
+    '''
+    '''
     src_match = {'type': 'label', 'language': src_lang, 'text': search}
     lexeme_result = []
     if ismatch_search:
@@ -37,16 +38,16 @@ def process_search_results(search_results, search, src_lang, ismatch_search):
 
 
 def lexemes_search(search, src_lang, ismatch):
-    """
-    """
+    '''
+    '''
     PARAMS = {
-        "action": "wbsearchentities",
-        "format": "json",
-        "language": src_lang,
-        "type": "lexeme",
-        "uselang": src_lang,
-        "search": search,
-        "limit": 15
+        'action': 'wbsearchentities',
+        'format': 'json',
+        'language': src_lang,
+        'type': 'lexeme',
+        'uselang': src_lang,
+        'search': search,
+        'limit': 15
     }
 
     wd_search_results = make_api_request(base_url, PARAMS)
@@ -69,15 +70,15 @@ def get_item_label(id):
 
 
 def get_image_url(file_name):
-    """
+    '''
     Returns the image url from the image file name.
-    """
-    return f"{wm_commons_image_base_url}{file_name}"
+    '''
+    return f'{wm_commons_image_base_url}{file_name}'
 
 
 def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
-    """
-    """
+    '''
+    '''
     processed_data = {}
     lexeme = {
         'id': lexeme_data['id'],
@@ -112,14 +113,14 @@ def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
 
 
 def get_lexeme_sense_glosses(lexeme_id, src_lang, lang_1, lang_2):
-    """
+    '''
     Gloses for a particular lexeme
-    """
+    '''
     PARAMS = {
-        "action": "wbgetentities",
-        "format": "json",
-        "languages": src_lang,
-        "ids": lexeme_id
+        'action': 'wbgetentities',
+        'format': 'json',
+        'languages': src_lang,
+        'ids': lexeme_id
     }
 
     lexeme_senses_data = make_api_request(base_url, PARAMS)
@@ -158,9 +159,9 @@ def process_lexeme_form_data(search_term, data, src_lang, lang_1, lang_2):
                 best_match_audio = get_close_matches(lang + '-' + search_term,
                                                      potential_match_audio)
 
-                # audio_object['audio'] = "File:" + best_match_audio[0] if \
+                # audio_object['audio'] = 'File:' + best_match_audio[0] if \
                 #     len(best_match_audio) > 1 else potential_match_audio[0]
-                audio_object['audio'] = "File:" + best_match_audio[0]
+                audio_object['audio'] = 'File:' + best_match_audio[0]
                 form_audio_list.append(audio_object)
             else:
                 audio_object['audio'] = None
@@ -172,10 +173,10 @@ def process_lexeme_form_data(search_term, data, src_lang, lang_1, lang_2):
 
 def get_lexeme_forms_audio(search_term, lexeme_id, src_lang, lang_1, lang_2):
     PARAMS = {
-        "action": "wbgetentities",
-        "format": "json",
-        "languages": src_lang,
-        "ids": lexeme_id
+        'action': 'wbgetentities',
+        'format': 'json',
+        'languages': src_lang,
+        'ids': lexeme_id
     }
 
     lexeme_data = make_api_request(base_url, PARAMS)
@@ -189,8 +190,16 @@ def get_lexeme_forms_audio(search_term, lexeme_id, src_lang, lang_1, lang_2):
     return form_data
 
 
-def create_new_lexeme(language, value, categoryId, username, token):
-    """
+def get_language_qid(lang_code):
+    languages = getLanguages()
+    for code, name, qid in languages:
+        if code == lang_code:
+            return code, name, qid
+    return None
+
+
+def create_new_lexeme(language, value, categoryId, username, auth_obj):
+    '''
     Creates a new lexeme in Wikidata
     Parameters:
         language (str): The language of the lexeme
@@ -198,39 +207,41 @@ def create_new_lexeme(language, value, categoryId, username, token):
         categoryId (int): The ID of the lexical category
         username (str): The username of the person creating the lexeme
         token (str): The crsf token for the request
-    """
+    '''
+    csrf_token, auth = generate_csrf_token(base_url, consumer_key,
+                                           consumer_secret,
+                                           auth_obj['access_token'],
+                                           auth_obj['access_secret'])
+    _, _, lqid = get_language_qid(language)
 
-    lex_data = {
+    lexeme_entry =  {
         'lemmas': {
             language: {
                 'language': language,
                 'value': value
             }
         },
-        'lexicalCategory': {
-            'entity-type': 'item',
-            'numeric-id': categoryId
-        }
+        'lexicalCategory': str(categoryId),
+        'language': lqid
     }
+
+    data = {}
+    data['action'] = 'wbeditentity'
+    data['new'] = 'lexeme'
+    data['summary'] = username + '@AGPB-' + app_version
+    data['token'] = csrf_token
+    data['format'] = 'json'
+    data['data'] = json.dumps(lexeme_entry)
+
+    response = requests.post(base_url, data=data, auth=auth).json()
+    print('response', response)
     
-    params = {}
-    params['new'] = 'lexeme'
-    params['token'] = token
-    params['action'] = 'wbeditentity'
-    params['data'] = json.dumps(lex_data, ensure_ascii=False)
-    params['summary'] = username + '@AGPB-' + app_version
-
-    try:
-        response = requests.post(base_url,
-                                 data=params)
-
-    except Exception as e:
+    if 'error' in response:
         return {
             'info': 'Unable to edit. Please check credentials' + str(e),
             'status_code': 503
         }
 
-    revision_id = response.get('pageinfo').get('lastrevid', None)
     return {
-        'revisionid': revision_id
+        'revisionid': response['entity']['lastrevid']
     }

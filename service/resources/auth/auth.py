@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 import mwoauth
 import json
 import jwt
-from flask import abort
+from flask import abort, jsonify
 
 from flask_restful import (Resource, reqparse,
                            fields, marshal_with)
@@ -71,7 +71,9 @@ class AuthCallBackPost(Resource):
             }, 200
 
         if 'request_token' not in session.keys():
-            abort('OAuth callback failed. Are cookies disabled?', 404)
+            return jsonify({
+                'message': 'OAuth callback failed. Are cookies disabled?'
+            }), 404
 
         consumer_token = mwoauth.ConsumerToken(
             consumer_key, consumer_secret)
@@ -86,9 +88,9 @@ class AuthCallBackPost(Resource):
                 auth_base_url, consumer_token, access_token)
 
         except Exception as e:
-            return {
+            return jsonify({
                 'message': 'OAuth callback failed. Are cookies disabled? ' + str(e)
-            }, 404
+            }), 404
 
         session['access_token'] = dict(zip(
             access_token._fields, access_token))
