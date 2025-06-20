@@ -1,13 +1,14 @@
 from flask import abort, request
 from flask_login import current_user
 import jwt
+from service import db
 from flask_restful import (Resource, reqparse,
                            fields, marshal_with)
 from service.require_token import token_required
 from .utils import (lexemes_search, get_lexeme_sense_glosses,
                     create_new_lexeme, get_lexemes_lacking_audio)
 from common import consumer_key, consumer_secret
-
+from service.models import ContributionModel
 
 # Used for validateion
 lexeme_args = reqparse.RequestParser()
@@ -122,6 +123,13 @@ class LexemesCreate(Resource):
 
         if result['status_code'] == 503:
             return result, result['status_code']
+
+        contribution = ContributionModel(username=current_user.username,
+                                         lang_code=args['language'],
+                                         edit_type='Lexeme Create',
+                                         data=args['value'] + '-' + args['categoryId'])
+        db.session.add(contribution)
+        db.session.commit()
 
         return result, 200
 
