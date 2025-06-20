@@ -40,6 +40,10 @@
     {
       "name": "auth",
       "description": "Authenticate with your wikidata account"
+    },
+    {
+      "name": "forms",
+      "description": "Process info about forms"
     }
   ],
   "paths": {
@@ -806,6 +810,52 @@
           }
         }
       }
+    },
+    "/lexeme/language/forms": {
+      "post": {
+        "tags": [
+          "lexeme"
+        ],
+        "summary": "Retrieve lexeme forms without audios for contribute ",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "lang_wdqid": {
+                    "type": "string",
+                    "example": "Q1860"
+                  },
+                  "limit": {
+                    "type": "int32",
+                    "example": 100
+                  },
+                  "offset": {
+                    "type": "int32",
+                    "example": 10
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/lex-forms-aduio"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No forms found"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -973,6 +1023,25 @@
           "revisionid": {
             "type": "int32",
             "example": 3435212441
+          }
+        }
+      },
+      "lex-forms-aduio": {
+        "type": "object",
+        "properties": {
+          "forms": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "lemma": {
+                  "type": "string"
+                },
+                "lexeme": {
+                  "type": "string"
+                }
+              }
+            }
           }
         }
       }

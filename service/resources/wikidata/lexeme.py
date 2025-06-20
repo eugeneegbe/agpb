@@ -5,7 +5,7 @@ from flask_restful import (Resource, reqparse,
                            fields, marshal_with)
 from service.require_token import token_required
 from .utils import (lexemes_search, get_lexeme_sense_glosses,
-                    create_new_lexeme)
+                    create_new_lexeme, get_lexemes_lacking_audio)
 from common import consumer_key, consumer_secret
 
 
@@ -13,6 +13,7 @@ from common import consumer_key, consumer_secret
 lexeme_args = reqparse.RequestParser()
 form_audio_args = reqparse.RequestParser()
 lexeme_create_args = reqparse.RequestParser()
+lex_form_without_audio = reqparse.RequestParser()
 
 lexeme_args.add_argument('search', type=str, help="Please provide a search term")
 lexeme_args.add_argument('src_lang', type=str, help="Source language is required")
@@ -32,6 +33,10 @@ form_audio_args.add_argument('id', type=str, help="Lexeme ID is required")
 form_audio_args.add_argument('src_lang', type=str, help="Source language is required")
 form_audio_args.add_argument('lang_1', type=str, help="Provide the first language")
 form_audio_args.add_argument('lang_2', type=str, help="Provide the second language")
+
+lex_form_without_audio.add_argument('lang_wdqid', type=str, help="Wikidata language Qid")
+lex_form_without_audio.add_argument('limit', type=int, help="Query result limit")
+lex_form_without_audio.add_argument('offset', type=int, help="Query result offset for pagination")
 
 
 lexeme_response_fields = {
@@ -57,9 +62,16 @@ lexemeSearcFields = {
     'description': fields.String,
 }
 
-
 lexemeCreateFields = {
     'revisionid': fields.Integer
+}
+
+
+lexemeNoAudioFields = {
+    'forms': fields.List(fields.Nested({
+        'lemma': fields.String,
+        'lexeme': fields.String
+    }))
 }
 
 
@@ -128,3 +140,19 @@ class LexemeGlossesGet(Resource):
             abort(lexeme_glosses['status_code'], lexeme_glosses)
 
         return lexeme_glosses, 200
+
+
+class LexemeFormsAudiosContrib(Resource):
+    @marshal_with(lexemeNoAudioFields)
+    def post(self):
+        args = lex_form_without_audio.parse_args()
+        if args['lang_wdqid'] is None or args['limit'] is None or args['offset'] is None:
+            abort(400, f'Please provide required parameters {str(list(args.keys()))}')
+
+        results = get_lexemes_lacking_audio(args['lang_wdqid'], args['limit'],
+                                                  args['offset'])
+
+        if 'error' in results:
+            abort(results['status_code'], results)
+
+        return results, 200

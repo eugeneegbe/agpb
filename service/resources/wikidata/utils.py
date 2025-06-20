@@ -10,6 +10,49 @@ from service.resources.commons.utils import get_media_url_by_title
 from service.resources.utils import generate_csrf_token
 
 
+def get_lexemes_lacking_audio(lang_qid, limit=50, offset=0):
+    """
+    All english forms missing an audio pronounciation
+    affixes excluded
+    TODO: Should be modified to find forms without audios
+    """
+    sparql_endpoint = "https://query.wikidata.org/sparql"
+    query = f"""
+    SELECT DISTINCT ?lexeme ?lemma ?audio WHERE {{
+      ?lexeme dct:language wd:{lang_qid};
+         wikibase:lemma ?lemma; 
+         ontolex:lexicalForm ?form .
+      ?form ontolex:representation ?lemma .
+      MINUS {{ ?form wdt:P443 ?audio. }}
+      # Exclude affixes
+      MINUS {{ ?lexeme wikibase:lexicalCategory wd:Q62155. }}
+    }}
+    LIMIT {limit}
+    OFFSET {offset}
+    """
+    headers = {
+        "Accept": "application/json"
+    }
+    response = requests.get(sparql_endpoint, params={"query": query}, headers=headers)
+    if response.status_code == 200:
+        audio_result = {}
+        data = response.json().get("results", {}).get("bindings", [])
+
+        form_entries = []
+        for form in data:
+            form_entries.append({
+                'lexeme': form['lexeme']['value'].split('/')[-1],
+                'lemma': form['lemma']['value']
+            })
+        audio_result['forms'] = form_entries
+        return audio_result
+    else:
+        return {
+            "error": f"SPARQL query failed with status code {response.status_code}",
+            "details": response.text
+        }
+
+
 def process_search_results(search_results, search, src_lang, ismatch_search):
     '''
     '''
