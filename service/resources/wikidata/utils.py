@@ -20,7 +20,7 @@ def get_lexemes_lacking_audio(lang_qid, limit=50, offset=0):
     query = f"""
     SELECT DISTINCT ?lexeme ?lemma ?audio WHERE {{
       ?lexeme dct:language wd:{lang_qid};
-         wikibase:lemma ?lemma; 
+         wikibase:lemma ?lemma;
          ontolex:lexicalForm ?form .
       ?form ontolex:representation ?lemma .
       MINUS {{ ?form wdt:P443 ?audio. }}

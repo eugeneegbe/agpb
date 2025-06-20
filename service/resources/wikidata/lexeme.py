@@ -150,7 +150,7 @@ class LexemeFormsAudiosContrib(Resource):
             abort(400, f'Please provide required parameters {str(list(args.keys()))}')
 
         results = get_lexemes_lacking_audio(args['lang_wdqid'], args['limit'],
-                                                  args['offset'])
+                                            args['offset'])
 
         if 'error' in results:
             abort(results['status_code'], results)
