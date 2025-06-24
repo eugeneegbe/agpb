@@ -1,0 +1,17 @@
+DOMAIN=localhost
+PORT=5000
+PREFIX='/api'
+FLASK_APP=server.py
+FLASK_ENV=development
+OAUTH_BASE_URL=https://www.wikidata.org
+BASE_URL=https://www.wikidata.org/w/api.php
+WM_COMMONS_URL=https://test.wikipedia.org/w/api.php
+CONSUMER_KEY=
+COMSUMER_SECRET=
+APP_VERSION=3.0
+APP_SECRET=987654321
+IS_DEV=TRUE
+DEV_FE_URL=http://localhost:5000/api/
+PROD_FE_URL=
+WM_COMMONS_IMAGE_BASE_URL=https://commons.wikimedia.org/wiki/Special:FilePath/
+WM_COMMONS_AUDIO_BASE_URL=https://upload.wikimedia.org/wikipedia/commons/6/6f/
