@@ -1040,26 +1040,41 @@
                 }
               }
             },
-            "gloss": {
+            "glosses": {
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "language": {
-                    "type": "string",
-                    "example": "de"
+                  "gloss": {
+                    "type": "object",
+                    "properties": {
+                      "language": {
+                        "type": "string",
+                        "example": "fr"
+                      },
+                      "value": {
+                        "type": "string",
+                        "example": "m\u00e8re"
+                      },
+                      "audio": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "example": null
+                      },
+                      "formId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "example": null
+                      }
+                    }
                   },
-                  "value": {
+                  "senseId": {
                     "type": "string",
-                    "example": "Mutter"
-                  },
-                  "formId": {
-                    "type": "string",
-                    "example": "L3625-F1"
-                  },
-                  "audio": {
-                    "type": "string",
-                    "example": "https://upload.wikimedia.org/wikipedia/commons/6/6f/En-uk-mother.ogg"
+                    "example": "L3625-S1"
                   }
                 }
               }

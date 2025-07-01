@@ -132,27 +132,29 @@ def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
     }
 
     processed_data['lexeme'] = lexeme
-    processed_data['gloss'] = []
+    processed_data['glosses'] = []
 
     for sense in lexeme_data['senses']:
         sense_base = {}
-        sense_base['id'] = sense['id']
         sense_gloss = sense['glosses']
         if sense_gloss:
+            temp_sense_gloss = sense_gloss.copy()
             for lang in [src_lang, lang_1, lang_2]:
                 if lang in sense_gloss:
-                    processed_data['gloss'].append(sense_gloss[lang])
+                    sense_base['senseId'] = sense['id']
+                    sense_base['gloss'] = temp_sense_gloss[lang]
+                    processed_data['glosses'].append(sense_base)
 
     #  TODO: Add audio data
-    for gloss in processed_data['gloss']:
+    for sense_gloss in processed_data['glosses']:
         for form in lexeme_data['forms']:
-            gloss['formId'] = form['id']
-            if gloss['language'] in form['representations']:
+            sense_gloss['gloss']['formId'] = form['id']
+            if sense_gloss['gloss']['language'] in form['representations']:
                 if form['claims'] and 'P443' in form['claims']:
                     audio = form['claims']['P443'][0]['mainsnak']['datavalue']['value']
-                    gloss['audio'] = wm_commons_audio_base_url + audio
+                    sense_gloss['gloss']['audio'] = wm_commons_audio_base_url + audio
             else:
-                gloss['audio'] = None
+                sense_gloss['gloss']['audio'] = None
     return [processed_data]
 
 

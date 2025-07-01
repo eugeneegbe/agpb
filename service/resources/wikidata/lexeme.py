@@ -56,11 +56,14 @@ lexeme_response_fields = {
         'lexicalCategoryLabel': fields.String,
         'image': fields.String,
     }),
-    'gloss': fields.List(fields.Nested({
-        'language': fields.String,
-        'value': fields.String,
-        'audio': fields.String,
-        'formId': fields.String,
+    'glosses': fields.List(fields.Nested({
+        'gloss': fields.Nested({
+            'language': fields.String,
+            'value': fields.String,
+            'audio': fields.String,
+            'formId': fields.String,
+        }),
+        'senseId': fields.String
     })),
 }
 
