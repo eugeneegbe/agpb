@@ -40,10 +40,6 @@
     {
       "name": "auth",
       "description": "Authenticate with your wikidata account"
-    },
-    {
-      "name": "forms",
-      "description": "Process info about forms"
     }
   ],
   "paths": {
