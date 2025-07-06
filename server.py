@@ -49,14 +49,7 @@ api.add_resource(CommonsFIleUrLPost, '/file/url/<string:titles>')
 
 @app.route('/')
 def redirect_to_prefix():
-    username = session.get('username', None)
-
-    if prefix != '/api':
-        return redirect(prefix)
-    return render_template('main/home.html',
-                           title='AGPB - Home',
-                           username=username)
-
+    return redirect(prefix)
 
 if __name__ == '__main__':
     app.run(debug=True)
