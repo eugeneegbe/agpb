@@ -26,8 +26,8 @@
       "description": "Fetch and use wikidata lexemes"
     },
     {
-      "name": "glosses",
-      "description": "Fetch Lexeme glosses in other languages"
+      "name": "translations",
+      "description": "Fetch Lexeme translations in other languages"
     },
     {
       "name": "file",
@@ -612,12 +612,76 @@
         }
       }
     },
+    "/lexemes/translations/add": {
+      "post": {
+        "tags": [
+          "lexeme"
+        ],
+        "summary": "Add translation lexeme on Wikidata",
+        "parameters": [
+          {
+            "name": "x-access-tokens",
+            "in": "header",
+            "required": true,
+            "description": "User access token",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "lexeme_id": {
+                    "type": "string",
+                    "example": "L3625"
+                  },
+                  "sense_id": {
+                    "type": "string",
+                    "example": "L3625-S1"
+                  },
+                  "translation_language": {
+                    "type": "string",
+                    "example": "dag"
+                  },
+                  "translation_value": {
+                    "type": "string",
+                    "example": "ma"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "translation Added successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/lexemes_translation_add"
+                }
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Unauthorized"
+        },
+        "403": {
+          "description": "Forbidden"
+        }
+      }
+    },
     "/lexemes/{id}": {
       "post": {
         "tags": [
-          "glosses"
+          "translations"
         ],
-        "summary": "Retrieve specific lexeme glosses (Possible existing word translations)",
+        "summary": "Retrieve specific lexeme translations (Possible existing word translations)",
         "requestBody": {
           "content": {
             "application/json": {
@@ -651,13 +715,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/glosses"
+                  "$ref": "#/components/schemas/translations"
                 }
               }
             }
           },
           "404": {
-            "description": "Glosses not found"
+            "description": "translations not found"
           }
         },
         "security": [
@@ -1015,7 +1079,7 @@
           }
         }
       },
-      "glosses": {
+      "translations": {
         "type": "array",
         "items": {
           "type": "object",
@@ -1040,12 +1104,12 @@
                 }
               }
             },
-            "glosses": {
+            "translations": {
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "gloss": {
+                  "translation": {
                     "type": "object",
                     "properties": {
                       "language": {
@@ -1088,6 +1152,15 @@
           "revisionid": {
             "type": "int32",
             "example": 3435212441
+          }
+        }
+      },
+      "lexemes_translation_add": {
+        "type": "object",
+        "properties": {
+          "revisionid": {
+            "type": "int32",
+            "example": 2371451655
           }
         }
       },

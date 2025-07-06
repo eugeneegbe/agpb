@@ -322,6 +322,109 @@ def create_new_lexeme(language, value, categoryId, username, auth_obj):
     }
 
 
+def add_gloss_to_lexeme_sense(lexeme_id, sense_id, gloss_language, gloss_value, auth_obj):
+    """
+    Adds a new gloss to an existing lexeme sense in Wikidata.
+
+    This function correctly implements the logic for editing a lexeme.
+    Adding a gloss is an *edit* to an existing lexeme, not the creation of a new one.
+
+    Parameters:
+        lexeme_id (str): The ID of the lexeme to modify (e.g., "L123").
+        sense_id (str): The ID of the sense to add the gloss to (e.g., "L123-S1").
+        gloss_language (str): The language code for the new gloss (e.g., "fr").
+        gloss_value (str): The text of the new gloss.
+        username (str): The username of the editor for the summary.
+        auth_obj (dict): The authentication object with access_token and access_secret.
+    """
+    # Step 1: Get a CSRF token for the edit
+    try:
+        csrf_token, auth = generate_csrf_token(base_url, consumer_key,
+                                               consumer_secret,
+                                               auth_obj['access_token'],
+                                               auth_obj['access_secret'])
+    except Exception as e:
+        return {
+            'info': f'Failed to generate CSRF token: {e}',
+            'status_code': 500
+        }
+
+    # We get the current lexeme
+    # Then get its avoid edit conflicts
+    get_params = {
+        'action': 'wbgetentities',
+        'ids': lexeme_id,
+        'format': 'json'
+    }
+    get_response = requests.get(base_url, params=get_params)
+    
+    if get_response.status_code != 200:
+        return {
+            'info': f'Failed to fetch lexeme {lexeme_id}. Status: {get_response.status_code}',
+            'status_code': get_response.status_code
+        }
+
+    lexeme_data = get_response.json()
+
+    if 'error' in lexeme_data or lexeme_id not in lexeme_data.get('entities', {}):
+        return {'info': f'Could not find lexeme {lexeme_id} in API response.', 'status_code': 404}
+
+    entity = lexeme_data['entities'][lexeme_id]
+    base_revid = entity.get('lastrevid')
+    senses = entity.get('senses', [])
+
+    if not base_revid:
+        return {'info': f'Could not find base revision ID for lexeme {lexeme_id}.', 'status_code': 404}
+
+    # Step 3: Find the target sense and add/update the gloss.
+    # We must submit the entire 'senses' array back, so we modify it in place.
+    sense_found = False
+    for sense in senses:
+        if sense['id'] == sense_id:
+            # Add the new gloss to the existing glosses dictionary
+            if 'glosses' not in sense:
+                sense['glosses'] = {}
+            sense['glosses'][gloss_language] = {
+                'language': gloss_language,
+                'value': gloss_value
+            }
+            sense_found = True
+            break
+
+    if not sense_found:
+        return {'info': f'Sense {sense_id} not found in lexeme {lexeme_id}', 'status_code': 404}
+
+    # Step 4: Prepare the data for the wbeditentity API call.
+    # The 'data' payload contains the modified 'senses' array.
+    edit_payload = {
+        'senses': senses
+    }
+
+    post_params = {
+        'action': 'wbeditentity',
+        'id': lexeme_id,
+        'data': json.dumps(edit_payload),
+        'summary': f"Adding '{gloss_language}' gloss for sense {sense_id} via AGPB-v{app_version}",
+        'token': csrf_token,
+        'baserevid': base_revid,
+        'format': 'json'
+    }
+
+    # Step 5: Make the API call to edit the entity
+    response = requests.post(base_url, data=post_params, auth=auth).json()
+    
+    if 'error' in response:
+        error_info = response['error'].get('info', 'Unknown error')
+        return {
+            'info': f'Unable to edit. Wikidata API error: {error_info}',
+            'status_code': 503
+        }
+
+    return {
+        'revisionid': response.get('entity', {}).get('lastrevid')
+    }
+
+
 def add_audio_to_lexeme(username, language_qid, lang_label,
                         data, form_id, auth_object, file_name):
 
@@ -386,3 +489,12 @@ def add_audio_to_lexeme(username, language_qid, lang_label,
         return {
             'error': "Error: " + str(qual_response.json()['error']['info'].capitalize())
         }
+
+
+def get_auth_object(consumer_key, consumer_secret, decoded_token):
+    return {
+        "consumer_key": consumer_key,
+        "consumer_secret": consumer_secret,
+        "access_token": decoded_token.get('access_token')['key'],
+        "access_secret": decoded_token.get('access_token')['secret'],
+    }

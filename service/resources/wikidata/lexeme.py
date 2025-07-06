@@ -7,7 +7,8 @@ from flask_restful import (Resource, reqparse,
 from service.require_token import token_required
 from .utils import (lexemes_search, get_lexeme_sense_glosses,
                     create_new_lexeme, get_lexemes_lacking_audio,
-                    add_audio_to_lexeme, get_language_qid)
+                    add_audio_to_lexeme, get_auth_object,
+                    add_gloss_to_lexeme_sense)
 from common import consumer_key, consumer_secret
 from service.models import ContributionModel
 
@@ -18,6 +19,7 @@ form_audio_args = reqparse.RequestParser()
 lexeme_create_args = reqparse.RequestParser()
 lex_form_without_audio_args = reqparse.RequestParser()
 lex_audio_add_args = reqparse.RequestParser()
+lexeme_gloss_add_args = reqparse.RequestParser()
 
 lexeme_args.add_argument('search', type=str, help="Please provide a search term")
 lexeme_args.add_argument('src_lang', type=str, help="Source language is required")
@@ -48,6 +50,11 @@ lex_audio_add_args.add_argument('data', type=str, help="Audio data in bytes")
 lex_audio_add_args.add_argument('formid', type=str, help="Lexeme Form Id")
 lex_audio_add_args.add_argument('filename', type=str, help="Composed file name f the uploaded file")
 
+lexeme_gloss_add_args.add_argument('lexeme_id', type=str, help="Lexeme ID is required")
+lexeme_gloss_add_args.add_argument('sense_id', type=str, help="Sense ID is required")
+lexeme_gloss_add_args.add_argument('gloss_language', type=str, help="Gloss language is required")
+lexeme_gloss_add_args.add_argument('gloss_value', type=str, help="Gloss value is required")
+lexeme_gloss_add_args.add_argument('username', type=str, help="User Name of editor")
 
 lexeme_response_fields = {
     'lexeme': fields.Nested({
@@ -73,6 +80,10 @@ lexemeSearcFields = {
     'label': fields.String,
     'language': fields.String,
     'description': fields.String,
+}
+
+LexemeGlossAddFields = {
+    'revisionid': fields.Integer
 }
 
 lexemeCreateFields = {
@@ -127,13 +138,7 @@ class LexemesCreate(Resource):
                 'message': 'Access token is missing in the decoded token'
             }, 400
 
-        auth_obj = {
-            "consumer_key": consumer_key,
-            "consumer_secret": consumer_secret,
-            "access_token": decoded_token.get('access_token')['key'],
-            "access_secret": decoded_token.get('access_token')['secret'],
-        }
-
+        auth_obj = get_auth_object(consumer_key, consumer_secret, decoded_token)
         result = create_new_lexeme(args['language'], args['value'],
                                    args['categoryId'], current_user.username, auth_obj)
 
@@ -210,6 +215,34 @@ class LexemeAudioAdd(Resource):
                                       args['lang_label'], args['data'], args['formid'],
                                       auth_obj, args['filename'])
 
+        if 'error' in results:
+            abort(results['status_code'], results)
+        return results, 200
+
+
+class LexemeGlossAdd(Resource):
+    @token_required
+    @marshal_with(LexemeGlossAddFields)
+    def post(self):
+        args = lexeme_gloss_add_args.parse_args()
+
+        if args['lexeme_id'] is None or args['sense_id'] is None or \
+           args['gloss_language'] is None or args['gloss_value'] is None:
+            abort(400, f'Please provide required parameters {str(list(args.keys()))}')
+
+        # get request header token_required info
+        token = request.headers.get('x-access-tokens')
+
+        decoded_token = jwt.decode(token, consumer_secret, algorithms=["HS256"])
+        if 'access_token' not in decoded_token:
+            return {
+                'message': 'Access token is missing in the decoded token'
+            }, 400
+
+        auth_obj = get_auth_object(consumer_key, consumer_secret, decoded_token)
+        results = add_gloss_to_lexeme_sense(args['lexeme_id'], args['sense_id'],
+                                            args['gloss_language'],
+                                            args['gloss_value'], auth_obj)
         if 'error' in results:
             abort(results['status_code'], results)
         return results, 200
