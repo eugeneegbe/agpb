@@ -4,3 +4,4 @@ instance/
 .venv
 /service/app.sqlite
 venv
+.tox
