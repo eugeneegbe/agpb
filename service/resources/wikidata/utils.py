@@ -120,6 +120,28 @@ def get_image_url(file_name):
     return f'{wm_commons_image_base_url}{file_name}'
 
 
+def get_default_gloss(lang):
+    """
+    Returns a default gloss dictionary for the specified language.
+
+    Args:
+        lang (str): The language code for the gloss.
+
+    Returns:
+        dict: A dictionary with the following keys:
+            - 'language': The provided language code.
+            - 'value': None (default value).
+            - 'audio': None (default value).
+            - 'formId': None (default value).
+    """
+    return {
+        'language': lang,
+        'value': None,
+        'audio': None,
+        'formId': None
+    }
+
+
 def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
     '''
     '''
@@ -134,21 +156,27 @@ def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
     processed_data['lexeme'] = lexeme
     processed_data['glosses'] = []
 
-    for sense in lexeme_data['senses']:
-        sense_base = {}
-        sense_gloss = sense['glosses']
-        if sense_gloss:
-            temp_sense_gloss = sense_gloss.copy()
-            for lang in [src_lang, lang_1, lang_2]:
-                if lang in sense_gloss:
+    for lang in [src_lang, lang_1, lang_2]:
+        for sense in lexeme_data['senses']:
+            sense_base = {}
+            sense_gloss = sense['glosses']
+
+            if sense_gloss and lang in sense_gloss:
+                temp_sense_gloss = sense_gloss.copy()
+                sense_base['senseId'] = sense['id']
+                sense_base['gloss'] = temp_sense_gloss[lang]
+                processed_data['glosses'].append(sense_base)
+
+            else:
+                if lang not in list(s['gloss']['language'] for s in processed_data['glosses']):
+                    sense_base = {}
                     sense_base['senseId'] = sense['id']
-                    sense_base['gloss'] = temp_sense_gloss[lang]
+                    sense_base['gloss'] = get_default_gloss(lang)
                     processed_data['glosses'].append(sense_base)
 
-    #  TODO: Add audio data
     for sense_gloss in processed_data['glosses']:
         for form in lexeme_data['forms']:
-            sense_gloss['gloss']['formId'] = form['id']
+            sense_gloss['gloss']['formId'] = form['id'] if sense_gloss['gloss']['value'] else None
             if sense_gloss['gloss']['language'] in form['representations']:
                 if form['claims'] and 'P443' in form['claims']:
                     audio = form['claims']['P443'][0]['mainsnak']['datavalue']['value']
