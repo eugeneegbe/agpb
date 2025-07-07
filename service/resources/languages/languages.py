@@ -50,6 +50,9 @@ class LanguageGet(Resource):
                 lang_pair.append(list(language))
 
         lang_pair = list(lang_pair)
+        if not lang_pair:
+            abort(400, "Language not supported")
+
         return {
             'lang_code': lang_pair[0][0],
             'lang_label': lang_pair[0][1],
