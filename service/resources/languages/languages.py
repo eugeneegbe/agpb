@@ -4,11 +4,19 @@ from flask_restful import (Resource, reqparse,
 from service.utils.languages import getLanguages
 
 lang_args = reqparse.RequestParser()
+
+
 lang_args.add_argument('lang_code', type=str, help="Please provide a language code")
 
 languageFields = {
     'lang_code': fields.String,
     'lang_label': fields.String
+}
+
+SinglelanguageFields = {
+    'lang_code': fields.String,
+    'lang_label': fields.String,
+    'lang_wd_id': fields.String
 }
 
 
@@ -30,7 +38,7 @@ class LanguagesGet(Resource):
 
 
 class LanguageGet(Resource):
-    @marshal_with(languageFields)
+    @marshal_with(SinglelanguageFields)
     def post(self, lang_code):
         args = lang_args.parse_args()
 
@@ -39,8 +47,11 @@ class LanguageGet(Resource):
         lang_pair = []
         for language in getLanguages():
             if language[0] == args['lang_code']:
-                lang_pair.append(language)
+                lang_pair.append(list(language))
+
+        lang_pair = list(lang_pair)
         return {
-            'lang_code': list(lang_pair)[0],
-            'lang_label': list(lang_pair)[1]
+            'lang_code': lang_pair[0][0],
+            'lang_label': lang_pair[0][1],
+            'lang_wd_id': lang_pair[0][2]
         }, 200
