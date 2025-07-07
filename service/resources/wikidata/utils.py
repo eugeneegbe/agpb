@@ -146,11 +146,15 @@ def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
     '''
     '''
     processed_data = {}
+    media = None
+    if image is not None:
+        media = get_image_url(image[0]['mainsnak']['datavalue']['value'])
+
     lexeme = {
         'id': lexeme_data['id'],
         'lexicalCategoryId': lexeme_data['lexicalCategory'],
         'lexicalCategoryLabel': get_item_label(lexeme_data['lexicalCategory']),
-        'image': get_image_url(image[0]['mainsnak']['datavalue']['value'])
+        'image': media
     }
 
     processed_data['lexeme'] = lexeme
