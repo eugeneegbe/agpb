@@ -1,56 +1,58 @@
 import json
+import sys
+
 import requests
 from wikidata.client import Client
 from common import (base_url, consumer_key, wm_commons_image_base_url,
-                    consumer_secret, app_version, wm_commons_audio_base_url)
+                    consumer_secret, app_version, wm_commons_audio_base_url,
+                    sparql_endpoint_url)
 from difflib import get_close_matches
 from service.utils.languages import getLanguages
 from service.resources.utils import make_api_request
 from service.resources.commons.utils import upload_file
 from service.resources.utils import generate_csrf_token
+from SPARQLWrapper import SPARQLWrapper, JSON
 
 
-def get_lexemes_lacking_audio(lang_qid, limit=50, offset=0):
-    """
-    All english forms missing an audio pronounciation
-    affixes excluded
-    TODO: Should be modified to find forms without audios
-    """
-    sparql_endpoint = "https://query.wikidata.org/sparql"
+def get_lexemes_lacking_audio(lang_qid, lang_code, page_size=15, page=1):
+    offset = (page - 1) * page_size
     query = f"""
-    SELECT DISTINCT ?lexeme ?lemma ?audio WHERE {{
-      ?lexeme dct:language wd:{lang_qid};
-         wikibase:lemma ?lemma;
-         ontolex:lexicalForm ?form .
-      ?form ontolex:representation ?lemma .
-      MINUS {{ ?form wdt:P443 ?audio. }}
-      # Exclude affixes
-      MINUS {{ ?lexeme wikibase:lexicalCategory wd:Q62155. }}
+    SELECT ?l ?sense ?lemma ?category ?categoryLabel ?form WHERE {{
+        ?l   ontolex:sense ?sense;
+            dct:language wd:{lang_qid};
+            wikibase:lemma ?lemma;
+            ontolex:lexicalForm ?form;
+            wikibase:lexicalCategory ?category.
+        ?category rdfs:label ?categoryLabel.
+        FILTER(lang(?categoryLabel) = "{lang_code}")
+        FILTER(NOT EXISTS {{ ?form wikibase:P443 ?audioFile. }})
     }}
-    LIMIT {limit}
+    ORDER BY ?l
+    LIMIT {page_size}
     OFFSET {offset}
     """
-    headers = {
-        "Accept": "application/json"
-    }
-    response = requests.get(sparql_endpoint, params={"query": query}, headers=headers)
-    if response.status_code == 200:
-        audio_result = {}
-        data = response.json().get("results", {}).get("bindings", [])
 
-        form_entries = []
-        for form in data:
-            form_entries.append({
-                'lexeme': form['lexeme']['value'].split('/')[-1],
-                'formId': form['form']['value'].splilt('/')[-1],
-                'lemma': form['lemma']['value']
+    user_agent = "AGPB/%s.%s" % (sys.version_info[0], sys.version_info[1])
+    sparql = SPARQLWrapper(sparql_endpoint_url, agent=user_agent)
+    sparql.setQuery(query)
+    sparql.setReturnFormat(JSON)
+    result = sparql.query().convert()
+    final_results = []
+    if 'results' in result and 'bindings' in result['results']:
+        for entry in result['results']['bindings']:
+            final_results.append({
+                "lexeme_id": entry['l']['value'].split('/')[-1],
+                "sense_id": entry['sense']['value'].split('/')[-1],
+                "lemma": entry['lemma']['value'],
+                "categoryId": entry['category']['value'].split('/')[-1],
+                "categoryLabel": entry['categoryLabel']['value'],
+                "formId": entry['form']['value'].split('/')[-1]
             })
-        audio_result['forms'] = form_entries
-        return audio_result
+        return final_results
     else:
         return {
-            "error": f"SPARQL query failed with status code {response.status_code}",
-            "details": response.text
+            "error": f"SPARQL query failed with status code {result.status_code}",
+            "details": result.text
         }
 
 
@@ -313,8 +315,7 @@ def create_new_lexeme(language, value, categoryId, username, auth_obj):
     data['data'] = json.dumps(lexeme_entry)
 
     response = requests.post(base_url, data=data, auth=auth).json()
-    print('response', response)
-    
+
     if 'error' in response:
         return {
             'info': 'Unable to edit. Please check credentials',

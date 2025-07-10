@@ -20,6 +20,8 @@ lexeme_create_args = reqparse.RequestParser()
 lex_form_without_audio_args = reqparse.RequestParser()
 lex_audio_add_args = reqparse.RequestParser()
 lexeme_gloss_add_args = reqparse.RequestParser()
+lexeme_missing_audio_args = reqparse.RequestParser()
+
 
 lexeme_args.add_argument('search', type=str, help="Please provide a search term")
 lexeme_args.add_argument('src_lang', type=str, help="Source language is required")
@@ -55,6 +57,12 @@ lexeme_gloss_add_args.add_argument('sense_id', type=str, help="Sense ID is requi
 lexeme_gloss_add_args.add_argument('gloss_language', type=str, help="Gloss language is required")
 lexeme_gloss_add_args.add_argument('gloss_value', type=str, help="Gloss value is required")
 lexeme_gloss_add_args.add_argument('username', type=str, help="User Name of editor")
+
+lexeme_missing_audio_args.add_argument('lang_wdqid', type=str, help="Wikidata language Qid")
+lexeme_missing_audio_args.add_argument('lang_code', type=str, help="The language code is required")
+lexeme_missing_audio_args.add_argument('page_size', type=int, help="You may need to provide a page size")
+lexeme_missing_audio_args.add_argument('page', type=int, help="You may need to provide a page number")
+
 
 lexeme_response_fields = {
     'lexeme': fields.Nested({
@@ -92,6 +100,15 @@ lexemeCreateFields = {
 
 LexemeAudioAddFields = {
 
+}
+
+lexeMissingAudioFields = {
+    "lexeme_id": fields.String,
+    "sense_id": fields.String,
+    "lemma": fields.String,
+    "categoryId": fields.String,
+    "categoryLabel": fields.String,
+    "formId": fields.String
 }
 
 lexemeNoAudioFields = {
@@ -245,4 +262,20 @@ class LexemeGlossAdd(Resource):
                                             args['gloss_value'], auth_obj)
         if 'error' in results:
             abort(results['status_code'], results)
+        return results, 200
+
+
+class LexemesMissingAudioGet(Resource):
+    @marshal_with(lexeMissingAudioFields)
+    def post(self):
+        args = lexeme_missing_audio_args.parse_args()
+        # TODO: Add arguments check
+        if args['lang_wdqid'] is None or args['lang_code'] is None:
+            abort(400, f'Please provide required parameters {str(list(args.keys()))}')
+
+        results = get_lexemes_lacking_audio(args['lang_wdqid'], args['lang_code'],
+                                            args['page_size'], args['page'])
+        if 'error' in results:
+            abort(results['status_code'], results)
+
         return results, 200

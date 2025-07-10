@@ -22,6 +22,7 @@ class ENVIRONMENT:
         self.prod_fe_url = os.getenv("PROD_FE_URL")
         self.commons_image_base_url = os.getenv("WM_COMMONS_IMAGE_BASE_URL")
         self.wm_commons_audio_base_url = os.getenv("WM_COMMONS_AUDIO_BASE_URL")
+        self.sparql_endpoint_url = os.getenv("SPARQL_ENDPOINT_URL")
 
     def get_instance(self):
         if not hasattr(self, "_instance"):
@@ -72,6 +73,9 @@ class ENVIRONMENT:
     
     def getCommonsAudioBaseUrl(self):
         return self.wm_commons_audio_base_url
+    
+    def getSparqlEndpointUrl(self):
+        return self.sparql_endpoint_url
 
 
 domain = ENVIRONMENT().get_instance().getDomain()
@@ -89,6 +93,7 @@ prod_fe_url = ENVIRONMENT().get_instance().getProdFEUrl()
 auth_base_url = ENVIRONMENT().get_instance().getAuthBaseUrl()
 wm_commons_image_base_url = ENVIRONMENT().get_instance().getCommonsImageBaseUrl()
 wm_commons_audio_base_url = ENVIRONMENT().get_instance().getCommonsAudioBaseUrl()
+sparql_endpoint_url = ENVIRONMENT().get_instance().getSparqlEndpointUrl()
 
 
 def build_swagger_config_json():

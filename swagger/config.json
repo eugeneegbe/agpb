@@ -970,6 +970,56 @@
           }
         }
       }
+    },
+    "/lexemes/missing/audio": {
+      "post": {
+        "tags": [
+          "lexeme"
+        ],
+        "summary": "Retrieve lexemes in a particular language with forms lacking audio",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "lang_wdqid": {
+                    "type": "string",
+                    "example": "Q33578"
+                  },
+                  "lang_code": {
+                    "type": "string",
+                    "example": "ig"
+                  },
+                  "page_size": {
+                    "type": "int32",
+                    "example": 15
+                  },
+                  "page": {
+                    "type": "int32",
+                    "example": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/lex-missing-audio"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No results found for this language"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1187,6 +1237,35 @@
                 }
               }
             }
+          }
+        }
+      },
+      "lex-missing-audio": {
+        "type": "object",
+        "properties": {
+          "lexeme_id": {
+            "type": "string",
+            "example": "L1019331"
+          },
+          "sense_id": {
+            "type": "string",
+            "example": "L1019331-S1"
+          },
+          "lemma": {
+            "type": "string",
+            "example": "\u1ecd\u0300ga"
+          },
+          "categoryId": {
+            "type": "string",
+            "example": "Q1084"
+          },
+          "categoryLabel": {
+            "type": "string",
+            "example": "aha"
+          },
+          "formId": {
+            "type": "string",
+            "example": "L1019331-F1"
           }
         }
       }
