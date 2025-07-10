@@ -182,7 +182,7 @@ class LexemeGlossesGet(Resource):
         lexeme_glosses = get_lexeme_sense_glosses(args['id'], args['src_lang'],
                                                   args['lang_1'], args['lang_2'])
 
-        if type(lexeme_glosses) is not list:
+        if 'error' in lexeme_glosses:
             abort(lexeme_glosses['status_code'], lexeme_glosses)
 
         return lexeme_glosses, 200

@@ -189,7 +189,7 @@ def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
                     sense_gloss['gloss']['audio'] = wm_commons_audio_base_url + audio
             else:
                 sense_gloss['gloss']['audio'] = None
-    return [processed_data]
+    return processed_data
 
 
 def get_lexeme_sense_glosses(lexeme_id, src_lang, lang_1, lang_2):
