@@ -4,14 +4,18 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_restful import Api, MethodNotAllowed, NotFound
 from flask_swagger_ui import get_swaggerui_blueprint
 from flask_login import LoginManager
+from flask_cors import CORS
+
 
 from common import (domain, port, prefix, build_swagger_config_json,
                     app_secret)
 
 app = Flask(__name__, template_folder='../templates')
 
+
 login_manager = LoginManager()
 
+CORS(app)
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'app.sqlite')
 app.secret_key = app_secret

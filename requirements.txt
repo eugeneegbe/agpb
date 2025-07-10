@@ -22,3 +22,4 @@ flask_swagger_ui
 requests
 requests-oauthlib==2.0.0
 mwoauth
+flask-cors==6.0.1

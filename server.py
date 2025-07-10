@@ -51,5 +51,6 @@ api.add_resource(CommonsFIleUrLPost, '/file/url/<string:titles>')
 def redirect_to_prefix():
     return redirect(prefix)
 
+
 if __name__ == '__main__':
     app.run(debug=True)
