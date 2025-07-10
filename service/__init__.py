@@ -15,7 +15,7 @@ app = Flask(__name__, template_folder='../templates')
 
 login_manager = LoginManager()
 
-CORS(app)
+cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'app.sqlite')
 app.secret_key = app_secret
