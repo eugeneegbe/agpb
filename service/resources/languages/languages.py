@@ -10,7 +10,8 @@ lang_args.add_argument('lang_code', type=str, help="Please provide a language co
 
 languageFields = {
     'lang_code': fields.String,
-    'lang_label': fields.String
+    'lang_label': fields.String,
+    'lang_wd_id': fields.String
 }
 
 SinglelanguageFields = {
@@ -27,7 +28,8 @@ class LanguagesGet(Resource):
         for lang in data:
             lang_pair = {
                 'lang_code': lang[0],
-                'lang_label': lang[1]
+                'lang_label': lang[1],
+                'lang_wd_id': lang[2]
             }
             lang_data.append(lang_pair)
         return lang_data
