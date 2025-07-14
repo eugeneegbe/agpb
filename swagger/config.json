@@ -1079,6 +1079,10 @@
           "lang_label": {
             "type": "string",
             "example": "Deutsch"
+          },
+          "lang_wdqid": {
+            "type": "string",
+            "example": "Q1860"
           }
         }
       },
