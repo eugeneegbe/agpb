@@ -15,3 +15,4 @@ DEV_FE_URL=http://localhost:5000/api/
 PROD_FE_URL=
 WM_COMMONS_IMAGE_BASE_URL=https://commons.wikimedia.org/wiki/Special:FilePath/
 WM_COMMONS_AUDIO_BASE_URL=https://upload.wikimedia.org/wikipedia/commons/6/6f/
+SPARQL_ENDPOINT_URL=https://query.wikidata.org/sparql
