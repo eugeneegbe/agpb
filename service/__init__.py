@@ -6,7 +6,7 @@ from flask_swagger_ui import get_swaggerui_blueprint
 from flask_login import LoginManager
 
 from common import (domain, port, prefix, build_swagger_config_json,
-                    app_secret)
+                    app_secret, is_dev)
 
 app = Flask(__name__, template_folder='../templates')
 login_manager = LoginManager()
@@ -22,7 +22,8 @@ api = Api(app, prefix=prefix, catch_all_404s=True)
 build_swagger_config_json()
 swaggerui_blueprint = get_swaggerui_blueprint(
     prefix,
-    f'https://{domain}:{port}{prefix}/swagger-config',
+    f'http://{domain}:{port}{prefix}/swagger-config' if is_dev else \
+        f'https://{domain}:{port}{prefix}/swagger-config' ,
     config={
         'app_name': "AGPB API",
         "layout": "BaseLayout",
