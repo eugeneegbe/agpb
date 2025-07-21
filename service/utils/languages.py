@@ -1,6 +1,5 @@
 def getLanguages():
     languages = [
-        ('', '', ''),
         ('aa', 'Afar', 'Q36279'),
         ('ab', 'Abkhazian', 'Q5111'),
         ('af', 'Afrikaans', 'Q14196'),
