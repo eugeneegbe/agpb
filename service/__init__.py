@@ -22,7 +22,7 @@ api = Api(app, prefix=prefix, catch_all_404s=True)
 build_swagger_config_json()
 swaggerui_blueprint = get_swaggerui_blueprint(
     prefix,
-    f'http://{domain}:{port}{prefix}/swagger-config',
+    f'https://{domain}:{port}{prefix}/swagger-config',
     config={
         'app_name': "AGPB API",
         "layout": "BaseLayout",
