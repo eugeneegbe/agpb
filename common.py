@@ -104,7 +104,7 @@ def build_swagger_config_json():
 
     config_data['servers'] = [
         {"url": f"http://localhost:{port}{prefix}"},
-        {"url": f"http://{domain}:{port}{prefix}"}
+        {"url": f"http://{domain}{prefix}"}
     ]
 
     new_config_file_path = os.path.dirname(__file__) + '/swagger/config.json'
