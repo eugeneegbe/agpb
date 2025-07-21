@@ -279,7 +279,8 @@ def get_language_qid(lang_code):
     return None
 
 
-def create_new_lexeme(language, value, categoryId, username, auth_obj):
+def translate_new_lexeme(translation_language, translation_value, categoryId,
+                         username, auth_obj, lexeme_id, is_new, lexeme_sense_id):
     '''
     Creates a new lexeme in Wikidata
     Parameters:
@@ -293,38 +294,45 @@ def create_new_lexeme(language, value, categoryId, username, auth_obj):
                                            consumer_secret,
                                            auth_obj['access_token'],
                                            auth_obj['access_secret'])
-    _, _, lqid = get_language_qid(language)
+    lastrev_id = None
 
-    lexeme_entry = {
-        'lemmas': {
-            language: {
-                'language': language,
-                'value': value
-            }
-        },
-        'lexicalCategory': str(categoryId),
-        'language': lqid
-    }
+    # New Lexeme needs to be created then returned
+    if is_new:
+        _, _, lqid = get_language_qid(translation_language)
 
-    data = {}
-    data['action'] = 'wbeditentity'
-    data['new'] = 'lexeme'
-    data['summary'] = username + '@AGPB-' + app_version
-    data['token'] = csrf_token
-    data['format'] = 'json'
-    data['data'] = json.dumps(lexeme_entry)
-
-    response = requests.post(base_url, data=data, auth=auth).json()
-
-    if 'error' in response:
-        return {
-            'info': 'Unable to edit. Please check credentials',
-            'status_code': 503
+        lexeme_entry = {
+            'lemmas': {
+                translation_language: {
+                    'language': translation_language,
+                    'value': translation_language
+                }
+            },
+            'lexicalCategory': str(categoryId),
+            'language': lqid
         }
 
-    return {
-        'revisionid': response['entity']['lastrevid']
-    }
+        data = {}
+        data['action'] = 'wbeditentity'
+        data['new'] = 'lexeme'
+        data['summary'] = username + '@AGPB-' + app_version
+        data['token'] = csrf_token
+        data['format'] = 'json'
+        data['data'] = json.dumps(lexeme_entry)
+
+        response = requests.post(base_url, data=data, auth=auth).json()
+
+        if 'error' in response:
+            return {
+                'info': 'Unable to edit. Please check credentials',
+                'status_code': 503
+            }
+        lastrev_id = response['entity']['lastrevid']
+    
+    if lastrev_id or not is_new:
+        # Just add the gloss here
+        add_gloss_to_lexeme_sense(lexeme_id, lexeme_sense_id,
+                                  translation_language, translation_value, auth_obj)
+
 
 
 def add_gloss_to_lexeme_sense(lexeme_id, sense_id, gloss_language, gloss_value, auth_obj):

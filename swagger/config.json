@@ -548,7 +548,7 @@
         }
       }
     },
-    "/lexemes/create": {
+    "/lexemes/translations/add": {
       "post": {
         "tags": [
           "lexeme"
@@ -571,11 +571,11 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "language": {
+                  "translation_language": {
                     "type": "string",
-                    "example": "en"
+                    "example": "ig"
                   },
-                  "value": {
+                  "translation_value": {
                     "type": "string",
                     "example": "mother"
                   },
@@ -586,6 +586,18 @@
                   "categoryId": {
                     "type": "string",
                     "example": "Q1084"
+                  },
+                  "lexeme_id": {
+                    "type": "string",
+                    "example": "L3625"
+                  },
+                  "is_new": {
+                    "type": "bool",
+                    "example": true
+                  },
+                  "lexeme_sense_id": {
+                    "type": "string",
+                    "example": "L3625-S1"
                   }
                 }
               }
@@ -598,71 +610,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/lexemes_create"
-                }
-              }
-            }
-          }
-        },
-        "401": {
-          "description": "Unauthorized"
-        },
-        "403": {
-          "description": "Forbidden"
-        }
-      }
-    },
-    "/lexemes/translations/add": {
-      "post": {
-        "tags": [
-          "lexeme"
-        ],
-        "summary": "Add translation lexeme on Wikidata",
-        "parameters": [
-          {
-            "name": "x-access-tokens",
-            "in": "header",
-            "required": true,
-            "description": "User access token",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "lexeme_id": {
-                    "type": "string",
-                    "example": "L3625"
-                  },
-                  "sense_id": {
-                    "type": "string",
-                    "example": "L3625-S1"
-                  },
-                  "translation_language": {
-                    "type": "string",
-                    "example": "dag"
-                  },
-                  "translation_value": {
-                    "type": "string",
-                    "example": "ma"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "translation Added successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/lexemes_translation_add"
+                  "$ref": "#/components/schemas/lexemes_translate"
                 }
               }
             }
@@ -960,7 +908,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/lexemes_create"
+                  "$ref": "#/components/schemas/lexemes_translation_add"
                 }
               }
             }
@@ -1204,7 +1152,7 @@
           }
         }
       },
-      "lexemes_create": {
+      "lexemes_translate": {
         "type": "object",
         "properties": {
           "revisionid": {

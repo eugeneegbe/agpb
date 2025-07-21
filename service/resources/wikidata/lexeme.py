@@ -6,7 +6,7 @@ from flask_restful import (Resource, reqparse,
                            fields, marshal_with)
 from service.require_token import token_required
 from .utils import (lexemes_search, get_lexeme_sense_glosses,
-                    create_new_lexeme, get_lexemes_lacking_audio,
+                    translate_new_lexeme, get_lexemes_lacking_audio,
                     add_audio_to_lexeme, get_auth_object,
                     add_gloss_to_lexeme_sense)
 from common import consumer_key, consumer_secret
@@ -16,7 +16,7 @@ from service.models import ContributionModel
 # Used for validateion
 lexeme_args = reqparse.RequestParser()
 form_audio_args = reqparse.RequestParser()
-lexeme_create_args = reqparse.RequestParser()
+lexeme_translate_args = reqparse.RequestParser()
 lex_form_without_audio_args = reqparse.RequestParser()
 lex_audio_add_args = reqparse.RequestParser()
 lexeme_gloss_add_args = reqparse.RequestParser()
@@ -31,10 +31,13 @@ lexeme_args.add_argument('lang_1', type=str, help="Provide the first language")
 lexeme_args.add_argument('lang_2', type=str, help="Provide the second language")
 lexeme_args.add_argument('ismatch', type=str, help="Match lexeme in language")
 
-lexeme_create_args.add_argument('value', type=str, help="Lexeme value text")
-lexeme_create_args.add_argument('username', type=str, help="User Name of editor")
-lexeme_create_args.add_argument('language', type=str, help="Lexeme language")
-lexeme_create_args.add_argument('categoryId', type=str, help="Lexeme Category")
+lexeme_translate_args.add_argument('translation_value', type=str, help="Lexeme value text")
+lexeme_translate_args.add_argument('username', type=str, help="User Name of editor")
+lexeme_translate_args.add_argument('translation_language', type=str, help="Lexeme language")
+lexeme_translate_args.add_argument('categoryId', type=str, help="Lexeme Category")
+lexeme_translate_args.add_argument('lexeme_id', type=str, help="Source Lexeme ID")
+lexeme_translate_args.add_argument('is_new', type=bool, help="Create a new lexeme")
+lexeme_translate_args.add_argument('lexeme_sense_id', type=str, help="Matching sense ID in the translation language")
 
 form_audio_args.add_argument('search_term', type=str, help="Provide a search term")
 form_audio_args.add_argument('id', type=str, help="Lexeme ID is required")
@@ -94,7 +97,7 @@ LexemeGlossAddFields = {
     'revisionid': fields.Integer
 }
 
-lexemeCreateFields = {
+lexemetranslateFields = {
     'revisionid': fields.Integer
 }
 
@@ -136,14 +139,16 @@ class LexemesGet(Resource):
         return lexemes, 200
 
 
-class LexemesCreate(Resource):
+class LexemesTranslate(Resource):
     @token_required
     def post(self):
-        args = lexeme_create_args.parse_args()
+        args = lexeme_translate_args.parse_args()
 
         # TODO: Add arguments check
-        if args['language'] is None or args['value'] is None or \
-           args['categoryId'] is None or args['username'] is None:
+        if args['translation_language'] is None or args['translation_value'] is None or \
+           args['categoryId'] is None or args['username'] is None or \
+           args['lexeme_id'] is None or args['is_new'] is None or \
+           args['lexeme_sense_id'] is None:
             abort(400, f'Please provide required parameters {str(list(args.keys()))}')
 
         # get request header token_required info
@@ -156,15 +161,17 @@ class LexemesCreate(Resource):
             }, 400
 
         auth_obj = get_auth_object(consumer_key, consumer_secret, decoded_token)
-        result = create_new_lexeme(args['language'], args['value'],
-                                   args['categoryId'], current_user.username, auth_obj)
+        result = translate_new_lexeme(args['translation_language'], args['translation_value'],
+                                      args['categoryId'], current_user.username, auth_obj,
+                                      args['lexeme_id'], args['is_new'],
+                                      args['lexeme_sense_id'])
 
         if result['status_code'] == 503:
             return result, result['status_code']
 
         contribution = ContributionModel(username=current_user.username,
                                          lang_code=args['language'],
-                                         edit_type='Lexeme Create',
+                                         edit_type='Lexeme translate',
                                          data=args['value'] + '-' + args['categoryId'])
         db.session.add(contribution)
         db.session.commit()
@@ -217,20 +224,23 @@ class LexemeAudioAdd(Resource):
         # get request header token_required info
         token = request.headers.get('x-access-tokens')
 
-        decoded_token = jwt.decode(token, consumer_secret, algorithms=["HS256"])
-        if 'access_token' not in decoded_token:
-            return {
-                'message': 'Access token is missing in the decoded token'
-            }, 400
+        try:
+            decoded_token = jwt.decode(token, consumer_secret, algorithms=["HS256"])
+            if 'access_token' not in decoded_token:
+                return {
+                    'message': 'Access token is missing in the decoded token'
+                }, 400
 
-        auth_obj = {
-            "access_token": decoded_token.get('access_token')['key'],
-            "access_secret": decoded_token.get('access_token')['secret'],
-        }
+            auth_obj = {
+                "access_token": decoded_token.get('access_token')['key'],
+                "access_secret": decoded_token.get('access_token')['secret'],
+            }
+        except Exception as e:
+            abort(401, 'User may not be authenticated')
 
-        results = add_audio_to_lexeme(current_user.username, args['lang_wdqid'],
-                                      args['lang_label'], args['data'], args['formid'],
-                                      auth_obj, args['filename'])
+            results = add_audio_to_lexeme(current_user.username, args['lang_wdqid'],
+                                        args['lang_label'], args['data'], args['formid'],
+                                        auth_obj, args['filename'])
 
         if 'error' in results:
             abort(results['status_code'], results)
