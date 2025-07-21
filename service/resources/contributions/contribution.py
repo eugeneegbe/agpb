@@ -25,9 +25,11 @@ contributionFields = {
 class ContributionsGet(Resource):
     @marshal_with(contributionFields)
     def get(self):
-        contributions = ContributionModel.query.all()
-        return contributions
-
+        try:
+            contributions = ContributionModel.query.all()
+            return contributions
+        except Exception as e:
+            abort(500, 'Table might not exist')
 
 class ContributionPost(Resource):
     @marshal_with(contributionFields)
