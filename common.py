@@ -57,7 +57,7 @@ class ENVIRONMENT:
         return self.app_version
 
     def getIsDev(self):
-        return self.is_dev
+        return bool(self.is_dev)
     
     def getDevFEUrl(self):
         return self.dev_fe_url
