@@ -5,4 +5,4 @@ instance/
 /service/app.sqlite
 venv
 .tox
-swagger/config.json
+swagger/config
