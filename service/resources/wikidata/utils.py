@@ -433,78 +433,84 @@ def add_gloss_to_lexeme_sense(lexeme_id, sense_id, gloss_language,
     return result_obj
 
 
-def add_audio_to_lexeme(username, language_qid, lang_label,
-                        data, form_id, auth_object, file_name):
+def add_audio_to_lexeme(username, auth_object, audio_data):
 
     csrf_token, api_auth_token = generate_csrf_token(base_url,
                                                      consumer_key,
                                                      consumer_secret,
                                                      auth_object['access_token'],
                                                      auth_object['access_secret'])
+    results = []
+    for data in audio_data:  
+        revision_id = None
+        upload_response = upload_file(base64.b64decode(data['file_content']), username,
+                                    data['lang_label'], auth_object, data['filename'])
+        
+        file_name = data['filename']
+        if 'duplicate' in upload_response.json()['upload']['warnings']:
+            file_name = upload_response.json()['upload']['warnings']['duplicate'][0]
 
-    revision_id = None
-    upload_response = upload_file(base64.b64decode(data), username,
-                                  lang_label, auth_object, file_name)
+        params = {}
+        params['format'] = 'json'
+        params['token'] = csrf_token
+        params['summary'] = username + '@AGPB-v' + app_version
+        params['action'] = 'wbcreateclaim'
+        params['entity'] = data['formid']
+        params['property'] = 'P443'
+        params['snaktype'] = 'value'
+        params['value'] = '"' + file_name + '"'
 
-    if 'duplicate' in upload_response.json()['upload']['warnings']:
-        file_name = upload_response.json()['upload']['warnings']['duplicate'][0]
+        if upload_response is False:
+            return {
+                'error': 'Upload failed'
+            }
 
-    params = {}
-    params['format'] = 'json'
-    params['token'] = csrf_token
-    params['summary'] = username + '@AGPB-v' + app_version
-    params['action'] = 'wbcreateclaim'
-    params['entity'] = form_id
-    params['property'] = 'P443'
-    params['snaktype'] = 'value'
-    params['value'] = '"' + file_name + '"'
+        try:
+            claim_response = requests.post(base_url, data=params, auth=api_auth_token)
+        except Exception as e:
+            return {
+                'error': 'Upload failed' + str(e)
+            }
 
-    if upload_response is False:
-        return {
-            'error': 'Upload failed'
-        }
+        if 'error' in claim_response.json().keys():
+            return {
+                'error': str(claim_response.json()['error']['code']
+                            .capitalize() + ': ' + claim_response.json()['error']['info']
+                            .capitalize())
+            }
 
-    try:
-        claim_response = requests.post(base_url, data=params, auth=api_auth_token)
-    except Exception as e:
-        print('failure on clain', e)
+        claim_result = claim_response.json()
 
-    if 'error' in claim_response.json().keys():
-        return {
-            'error': str(claim_response.json()['error']['code']
-                         .capitalize() + ': ' + claim_response.json()['error']['info']
-                         .capitalize())
-        }
+        # get language item here from lang_code
+        qualifier_value = data['lang_wdqid']
+        qualifier_params = {}
+        qualifier_params['claim'] = claim_result['claim']['id']
+        qualifier_params['action'] = 'wbsetqualifier'
+        qualifier_params['property'] = 'P407'
+        qualifier_params['snaktype'] = 'value'
+        qualifier_params['value'] = json.dumps({'entity-type': 'item', 'id': qualifier_value})
+        qualifier_params['format'] = 'json'
+        qualifier_params['token'] = csrf_token
+        qualifier_params['summary'] = username + '@AGPB-v' + app_version
 
-    claim_result = claim_response.json()
+        try:
+            qual_response = requests.post(base_url, data=qualifier_params,
+                                        auth=api_auth_token)
 
-    # get language item here from lang_code
-    qualifier_value = language_qid
-    qualifier_params = {}
-    qualifier_params['claim'] = claim_result['claim']['id']
-    qualifier_params['action'] = 'wbsetqualifier'
-    qualifier_params['property'] = 'P407'
-    qualifier_params['snaktype'] = 'value'
-    qualifier_params['value'] = json.dumps({'entity-type': 'item', 'id': qualifier_value})
-    qualifier_params['format'] = 'json'
-    qualifier_params['token'] = csrf_token
-    qualifier_params['summary'] = username + '@AGPB-v' + app_version
+            qualifier_params = qual_response.json()
 
-    qual_response = requests.post(base_url, data=qualifier_params,
-                                  auth=api_auth_token)
-
-    qualifier_params = qual_response.json()
-
-    if qual_response.status_code != 200:
-        {'error': 'Qualifier could not be added'}
-    if 'pageinfo' in qualifier_params and 'success' in qualifier_params['pageinfo']:
-        revision_id = qualifier_params.get('pageinfo').get('lastrevid', None)
-        return {'revisionid': revision_id}
-    else:
-        return {
-            'error': "Error: Edit was not completed" 
-        }
-
+            if qual_response.status_code != 200:
+                return {'error': 'Qualifier could not be added'}
+        
+            revision_id = qualifier_params.get('pageinfo').get('lastrevid', None)
+            results.append({
+                'lexeme_id': data['formid'].split('-')[0],
+                'revisionid': revision_id
+            })
+        except Exception as e:
+            return {'error': 'Qualifier could not be added' + str(e)}
+        
+    return {'results': results}
 
 def get_auth_object(consumer_key, consumer_secret, decoded_token):
     return {
@@ -513,7 +519,6 @@ def get_auth_object(consumer_key, consumer_secret, decoded_token):
         "access_token": decoded_token.get('access_token')['key'],
         "access_secret": decoded_token.get('access_token')['secret'],
     }
-
 
 
 def validate_translation_request_body(request_body, schema):

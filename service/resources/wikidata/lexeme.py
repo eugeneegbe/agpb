@@ -65,6 +65,36 @@ translation_schema = {
     }
 }
 
+add_audio_schema = {
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "lang_wdqid": {
+                "type": "string",
+                "example": "Q188"
+            },
+            "lang_label": {
+                "type": "string",
+                "example": "German"
+            },
+            "formid": {
+                "type": "string",
+                "example": "L3625-F1"
+            },
+            "filename": {
+                "type": "string",
+                "example": "L3625-de-Mutter.ogg"
+            },
+            "file_content": {
+                "type": "string",
+                "example": "T2dnUwA"
+            }
+        },
+        "required": ["lang_wdqid", "lang_label", "formid", "file_content"]
+    }
+}
+
 form_audio_args.add_argument('search_term', type=str, help="Provide a search term")
 form_audio_args.add_argument('id', type=str, help="Lexeme ID is required")
 form_audio_args.add_argument('src_lang', type=str, help="Source language is required")
@@ -128,7 +158,10 @@ lexemetranslateFields = {
 }
 
 LexemeAudioAddFields = {
-
+    'results': fields.List(fields.Nested({
+        'revisionid': fields.Integer,
+        'lexeme_id': fields.String
+    }))
 }
 
 lexeMissingAudioFields = {
@@ -227,12 +260,12 @@ class LexemeFormsAudiosLackGet(Resource):
 class LexemeAudioAdd(Resource):
     @marshal_with(LexemeAudioAddFields)
     def post(self):
-        args = lex_audio_add_args.parse_args()
+        request_body = request.get_json()
+        if not request_body:
+            abort(400, 'Request body is empty')
 
-        if args['lang_wdqid'] is None or args['lang_label'] is None or \
-           args['file_content'] is None or args['formid'] is None or \
-           args['filename'] is None:
-            abort(400, f'Please provide required parameters {str(list(args.keys()))}')
+        if not validate_translation_request_body(request_body, add_audio_schema):
+            abort(400, 'Invalid request body')
 
         # get request header token_required info
         token = request.headers.get('x-access-tokens')
@@ -251,9 +284,7 @@ class LexemeAudioAdd(Resource):
             "access_token": decoded_token.get('access_token')['key'],
             "access_secret": decoded_token.get('access_token')['secret'],
         }
-        results = add_audio_to_lexeme(current_user.username, args['lang_wdqid'],
-                                      args['lang_label'], args['file_content'],
-                                      args['formid'], auth_obj, args['filename'])
+        results = add_audio_to_lexeme(current_user.username, auth_obj, request_body)
 
         if 'error' in results:
             abort(503, results)
