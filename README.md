@@ -12,13 +12,17 @@
 ```bash
 python3 -m venv venv
 ```
-- Step 2: Update pip
+- Step 2: Activate virtual enviroment
+```bash
+source venv/bin/activate
+```
+- Step 3: Update pip
 ```bash
 pip3 install --upgrade pip
 ```
-- Step 3: Run Server with 
+- Step 4: Run Server with 
 ```bash
-python3 server.py
+python3 app.py
 ```
 
 
