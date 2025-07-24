@@ -23,10 +23,6 @@
       "description": "Fetch and use wikidata lexemes"
     },
     {
-      "name": "translations",
-      "description": "Fetch Lexeme translations in other languages"
-    },
-    {
       "name": "file",
       "description": "Get file downloadable url from file name"
     },
@@ -634,10 +630,10 @@
         }
       }
     },
-    "/lexemes/{id}": {
+    "/lexemes/{id}/translations/": {
       "post": {
         "tags": [
-          "translations"
+          "lexeme"
         ],
         "summary": "Retrieve specific lexeme translations (Possible existing word translations)",
         "requestBody": {
