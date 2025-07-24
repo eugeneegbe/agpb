@@ -338,7 +338,7 @@ def translate_new_lexeme(translation_data, username, auth_obj):
             # Just add the gloss here
             return add_gloss_to_lexeme_sense(data['lexeme_id'], data['lexeme_sense_id'],
                                     data['translation_language'], data['translation_value'],
-                                    csrf_token, auth, result_object)
+                                    username, csrf_token, auth, result_object)
     return {
         'error': 'No edit was made please check the data',
         'status_code': 503
@@ -346,7 +346,7 @@ def translate_new_lexeme(translation_data, username, auth_obj):
 
 
 def add_gloss_to_lexeme_sense(lexeme_id, sense_id, gloss_language,
-                              gloss_value, csrf_token, auth, result_obj):
+                              gloss_value, username, csrf_token, auth, result_obj):
     """
     Adds a new gloss to an existing lexeme sense in Wikidata.
 
@@ -422,16 +422,29 @@ def add_gloss_to_lexeme_sense(lexeme_id, sense_id, gloss_language,
         'format': 'json'
     }
 
-    # Step 5: Make the API call to edit the entity
-    response = requests.post(base_url, data=post_params, auth=auth).json()
-    
-    if 'error' in response:
-        error_info = response['error'].get('info', 'Unknown error')
-        return {
-            'info': f'Unable to edit. Wikidata API error: {error_info}',
-            'status_code': 503
-        }
+    try:
+        # Step 5: Make the API call to edit the entity
+        response = requests.post(base_url, data=post_params, auth=auth).json()
+        
+        if 'error' in response:
+            error_info = response['error'].get('info', 'Unknown error')
+            return {
+                'error': f'Unable to edit. Wikidata API error: {error_info}',
+                'status_code': 503
+            }
+        contribution = ContributionModel(wd_item=lexeme_id,
+                                                username=username,
+                                                lang_code=gloss_language,
+                                                edit_type='audio',
+                                                data="Added: " + gloss_value,
+                                                date=datetime.datetime.now())
+        db.session.add(contribution)
+        db.session.commit()
 
+    except Exception as e:
+        return {'error': 'Qualifier could not be added: ' + str(e)}
+
+    # Record contribtion
     result_obj[lexeme_id] = response.get('entity', {}).get('lastrevid')
     return result_obj
 
