@@ -77,7 +77,7 @@ lex_form_without_audio_args.add_argument('offset', type=int, help="Query result 
 
 lex_audio_add_args.add_argument('lang_wdqid', type=str, help="Wikidata language Qid")
 lex_audio_add_args.add_argument('lang_label', type=str, help="Language label")
-lex_audio_add_args.add_argument('data', type=str, help="Audio data in bytes")
+lex_audio_add_args.add_argument('file_content', type=str, help="Audio data in bytes")
 lex_audio_add_args.add_argument('formid', type=str, help="Lexeme Form Id")
 lex_audio_add_args.add_argument('filename', type=str, help="Composed file name f the uploaded file")
 
@@ -166,7 +166,6 @@ class LexemesGet(Resource):
 
 
 class LexemesTranslate(Resource):
-    # @token_required
     def post(self):
         request_body = request.get_json()
         if not request_body:
@@ -226,12 +225,12 @@ class LexemeFormsAudiosLackGet(Resource):
 
 
 class LexemeAudioAdd(Resource):
-    @token_required
     @marshal_with(LexemeAudioAddFields)
     def post(self):
-        args = lex_form_without_audio_args.parse_args()
+        args = lex_audio_add_args.parse_args()
+
         if args['lang_wdqid'] is None or args['lang_label'] is None or \
-           args['data'] is None or args['formid'] is None or \
+           args['file_content'] is None or args['formid'] is None or \
            args['filename'] is None:
             abort(400, f'Please provide required parameters {str(list(args.keys()))}')
 
@@ -244,20 +243,21 @@ class LexemeAudioAdd(Resource):
                 return {
                     'message': 'Access token is missing in the decoded token'
                 }, 400
-
-            auth_obj = {
-                "access_token": decoded_token.get('access_token')['key'],
-                "access_secret": decoded_token.get('access_token')['secret'],
-            }
+            
         except Exception as e:
             abort(401, 'User may not be authenticated')
 
-            results = add_audio_to_lexeme(current_user.username, args['lang_wdqid'],
-                                        args['lang_label'], args['data'], args['formid'],
-                                        auth_obj, args['filename'])
+        auth_obj = {
+            "access_token": decoded_token.get('access_token')['key'],
+            "access_secret": decoded_token.get('access_token')['secret'],
+        }
+        results = add_audio_to_lexeme(current_user.username, args['lang_wdqid'],
+                                      args['lang_label'], args['file_content'],
+                                      args['formid'], auth_obj, args['filename'])
 
         if 'error' in results:
-            abort(results['status_code'], results)
+            abort(503, results)
+
         return results, 200
 
 

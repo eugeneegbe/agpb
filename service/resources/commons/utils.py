@@ -39,12 +39,12 @@ def get_media_url_by_title(file_titles):
     return media_results
 
 
-def upload_file(file_data, username, lang_label, auth_obj, file_name):
+def upload_file(file_data, username, lang_label, auth, file_name):
     csrf_token, api_auth_token = generate_csrf_token(commons_url,
-                                                     consumer_key,
-                                                     consumer_secret,
-                                                     auth_obj['access_token'],
-                                                     auth_obj['access_secret'])
+                                                    consumer_key,
+                                                    consumer_secret,
+                                                    auth['access_token'],
+                                                    auth['access_secret'])
     params = {}
     params['action'] = 'upload'
     params['format'] = 'json'
@@ -53,11 +53,15 @@ def upload_file(file_data, username, lang_label, auth_obj, file_name):
     params['text'] = "\n== {{int:license-header}} ==\n{{cc-by-sa-4.0}}\n\n[[Category:" +\
                      lang_label + " Pronunciation]]"
 
-    response = requests.post(commons_url,
-                             data=params,
-                             auth=api_auth_token,
-                             files={'file': io.BytesIO(file_data)})
+    try:
+        response = requests.post(commons_url,
+                                data=params,
+                                auth=api_auth_token,
+                                files={'file': io.BytesIO(file_data)})
+        print('File upload response ', response.text)
+    except Exception as e:
+        print('File upload response ', e)
     if response.status_code != 200:
         return False
 
-    return True
+    return response

@@ -1,11 +1,11 @@
 import json
 import sys
-
+import base64
 import requests
 from wikidata.client import Client
 from common import (base_url, consumer_key, wm_commons_image_base_url,
                     consumer_secret, app_version, wm_commons_audio_base_url,
-                    sparql_endpoint_url)
+                    sparql_endpoint_url, commons_url)
 from difflib import get_close_matches
 from jsonschema import validate, ValidationError
 from service.utils.languages import getLanguages
@@ -332,7 +332,6 @@ def translate_new_lexeme(translation_data, username, auth_obj):
             result_object[response['entity']['id']] = lastrev_id
 
         if lastrev_id or bool(data['is_new']) is False:
-            print(data['lexeme_id'])
             # Just add the gloss here
             return add_gloss_to_lexeme_sense(data['lexeme_id'], data['lexeme_sense_id'],
                                     data['translation_language'], data['translation_value'],
@@ -440,8 +439,16 @@ def add_audio_to_lexeme(username, language_qid, lang_label,
     csrf_token, api_auth_token = generate_csrf_token(base_url,
                                                      consumer_key,
                                                      consumer_secret,
-                                                     auth_object['acces_token'],
+                                                     auth_object['access_token'],
                                                      auth_object['access_secret'])
+
+    revision_id = None
+    upload_response = upload_file(base64.b64decode(data), username,
+                                  lang_label, auth_object, file_name)
+
+    if 'duplicate' in upload_response.json()['upload']['warnings']:
+        file_name = upload_response.json()['upload']['warnings']['duplicate'][0]
+
     params = {}
     params['format'] = 'json'
     params['token'] = csrf_token
@@ -452,16 +459,15 @@ def add_audio_to_lexeme(username, language_qid, lang_label,
     params['snaktype'] = 'value'
     params['value'] = '"' + file_name + '"'
 
-    revision_id = None
-
-    upload_response = upload_file(data, username, lang_label, auth_object, file_name)
-
     if upload_response is False:
         return {
             'error': 'Upload failed'
         }
 
-    claim_response = requests.post(base_url, data=params, auth=api_auth_token)
+    try:
+        claim_response = requests.post(base_url, data=params, auth=api_auth_token)
+    except Exception as e:
+        print('failure on clain', e)
 
     if 'error' in claim_response.json().keys():
         return {
@@ -491,12 +497,12 @@ def add_audio_to_lexeme(username, language_qid, lang_label,
 
     if qual_response.status_code != 200:
         {'error': 'Qualifier could not be added'}
-    if 'success' in qualifier_params.keys():
+    if 'pageinfo' in qualifier_params and 'success' in qualifier_params['pageinfo']:
         revision_id = qualifier_params.get('pageinfo').get('lastrevid', None)
         return {'revisionid': revision_id}
     else:
         return {
-            'error': "Error: " + str(qual_response.json()['error']['info'].capitalize())
+            'error': "Error: Edit was not completed" 
         }
 
 
