@@ -566,36 +566,49 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "translation_language": {
-                    "type": "string",
-                    "example": "ig"
-                  },
-                  "translation_value": {
-                    "type": "string",
-                    "example": "mother"
-                  },
-                  "username": {
-                    "type": "string",
-                    "example": "JohnD12"
-                  },
-                  "categoryId": {
-                    "type": "string",
-                    "example": "Q1084"
-                  },
-                  "lexeme_id": {
-                    "type": "string",
-                    "example": "L3625"
-                  },
-                  "is_new": {
-                    "type": "bool",
-                    "example": true
-                  },
-                  "lexeme_sense_id": {
-                    "type": "string",
-                    "example": "L3625-S1"
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "translation_language": {
+                      "type": "string",
+                      "example": "ig"
+                    },
+                    "translation_value": {
+                      "type": "string",
+                      "example": "mother"
+                    },
+                    "categoryId": {
+                      "type": "string",
+                      "example": "Q1084"
+                    },
+                    "lexeme_id": {
+                      "type": "string",
+                      "example": "L3625"
+                    },
+                    "is_new": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "lexeme_sense_id": {
+                      "type": "string",
+                      "example": "L3625-S1"
+                    }
                   }
+                }
+              },
+              "examples": {
+                "An example array of objects": {
+                  "value": [
+                    {
+                      "translation_language": "ig",
+                      "translation_value": "mother",
+                      "categoryId": "Q1084",
+                      "lexeme_id": "L3625",
+                      "is_new": true,
+                      "lexeme_sense_id": "L3625-S1"
+                    }
+                  ]
                 }
               }
             }

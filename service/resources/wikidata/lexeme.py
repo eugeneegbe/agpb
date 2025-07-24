@@ -8,7 +8,7 @@ from service.require_token import token_required
 from .utils import (lexemes_search, get_lexeme_sense_glosses,
                     translate_new_lexeme, get_lexemes_lacking_audio,
                     add_audio_to_lexeme, get_auth_object,
-                    add_gloss_to_lexeme_sense)
+                    add_gloss_to_lexeme_sense, validate_translation_request_body)
 from common import consumer_key, consumer_secret
 from service.models import ContributionModel
 
@@ -31,13 +31,39 @@ lexeme_args.add_argument('lang_1', type=str, help="Provide the first language")
 lexeme_args.add_argument('lang_2', type=str, help="Provide the second language")
 lexeme_args.add_argument('ismatch', type=str, help="Match lexeme in language")
 
-lexeme_translate_args.add_argument('translation_value', type=str, help="Lexeme value text")
-lexeme_translate_args.add_argument('username', type=str, help="User Name of editor")
-lexeme_translate_args.add_argument('translation_language', type=str, help="Lexeme language")
-lexeme_translate_args.add_argument('categoryId', type=str, help="Lexeme Category")
-lexeme_translate_args.add_argument('lexeme_id', type=str, help="Source Lexeme ID")
-lexeme_translate_args.add_argument('is_new', type=bool, help="Create a new lexeme")
-lexeme_translate_args.add_argument('lexeme_sense_id', type=str, help="Matching sense ID in the translation language")
+translation_schema = {
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "translation_language": {
+                "type": "string",
+                "example": "ig"
+            },
+            "translation_value": {
+                "type": "string",
+                "example": "mother"
+            },
+            "categoryId": {
+                "type": "string",
+                "example": "Q1084"
+            },
+            "lexeme_id": {
+                "type": "string",
+                "example": "L3625"
+            },
+            "is_new": {
+                "type": "boolean",
+                "example": True
+            },
+            "lexeme_sense_id": {
+                "type": "string",
+                "example": "L3625-S1"
+            }
+        },
+        "required": ["translation_language", "translation_value", "categoryId", "lexeme_id", "is_new", "lexeme_sense_id"]
+    }
+}
 
 form_audio_args.add_argument('search_term', type=str, help="Provide a search term")
 form_audio_args.add_argument('id', type=str, help="Lexeme ID is required")
@@ -140,16 +166,14 @@ class LexemesGet(Resource):
 
 
 class LexemesTranslate(Resource):
-    @token_required
+    # @token_required
     def post(self):
-        args = lexeme_translate_args.parse_args()
+        request_body = request.get_json()
+        if not request_body:
+            abort(400, 'Request body is empty')
 
-        # TODO: Add arguments check
-        if args['translation_language'] is None or args['translation_value'] is None or \
-           args['categoryId'] is None or args['username'] is None or \
-           args['lexeme_id'] is None or args['is_new'] is None or \
-           args['lexeme_sense_id'] is None:
-            abort(400, f'Please provide required parameters {str(list(args.keys()))}')
+        if not validate_translation_request_body(request_body, translation_schema):
+            abort(400, 'Invalid request body')
 
         # get request header token_required info
         token = request.headers.get('x-access-tokens')
@@ -161,20 +185,10 @@ class LexemesTranslate(Resource):
             }, 400
 
         auth_obj = get_auth_object(consumer_key, consumer_secret, decoded_token)
-        result = translate_new_lexeme(args['translation_language'], args['translation_value'],
-                                      args['categoryId'], current_user.username, auth_obj,
-                                      args['lexeme_id'], args['is_new'],
-                                      args['lexeme_sense_id'])
+        result = translate_new_lexeme(request_body, current_user.username, auth_obj)
 
-        if result['status_code'] == 503:
+        if 'status_code' in result and result['status_code'] == 503:
             return result, result['status_code']
-
-        contribution = ContributionModel(username=current_user.username,
-                                         lang_code=args['language'],
-                                         edit_type='Lexeme translate',
-                                         data=args['value'] + '-' + args['categoryId'])
-        db.session.add(contribution)
-        db.session.commit()
 
         return result, 200
 

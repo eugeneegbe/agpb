@@ -7,6 +7,7 @@ from common import (base_url, consumer_key, wm_commons_image_base_url,
                     consumer_secret, app_version, wm_commons_audio_base_url,
                     sparql_endpoint_url)
 from difflib import get_close_matches
+from jsonschema import validate, ValidationError
 from service.utils.languages import getLanguages
 from service.resources.utils import make_api_request
 from service.resources.commons.utils import upload_file
@@ -279,8 +280,7 @@ def get_language_qid(lang_code):
     return None
 
 
-def translate_new_lexeme(translation_language, translation_value, categoryId,
-                         username, auth_obj, lexeme_id, is_new, lexeme_sense_id):
+def translate_new_lexeme(translation_data, username, auth_obj):
     '''
     Creates a new lexeme in Wikidata
     Parameters:
@@ -294,48 +294,57 @@ def translate_new_lexeme(translation_language, translation_value, categoryId,
                                            consumer_secret,
                                            auth_obj['access_token'],
                                            auth_obj['access_secret'])
-    lastrev_id = None
+    result_object = {}
+    for data in translation_data:
+        bool(data['is_new'] is True)
+        lastrev_id = None
+        if data['is_new'] is True:
+        # New Lexeme needs to be created then returned
+            _, _, lqid = get_language_qid(data['translation_language'])
 
-    # New Lexeme needs to be created then returned
-    if is_new:
-        _, _, lqid = get_language_qid(translation_language)
-
-        lexeme_entry = {
-            'lemmas': {
-                translation_language: {
-                    'language': translation_language,
-                    'value': translation_language
-                }
-            },
-            'lexicalCategory': str(categoryId),
-            'language': lqid
-        }
-
-        data = {}
-        data['action'] = 'wbeditentity'
-        data['new'] = 'lexeme'
-        data['summary'] = username + '@AGPB-' + app_version
-        data['token'] = csrf_token
-        data['format'] = 'json'
-        data['data'] = json.dumps(lexeme_entry)
-
-        response = requests.post(base_url, data=data, auth=auth).json()
-
-        if 'error' in response:
-            return {
-                'info': 'Unable to edit. Please check credentials',
-                'status_code': 503
+            lexeme_entry = {
+                'lemmas': {
+                    data['translation_language']: {
+                        'language': data['translation_language'],
+                        'value': data['translation_value']
+                    }
+                },
+                'lexicalCategory': str(data['categoryId']),
+                'language': lqid
             }
-        lastrev_id = response['entity']['lastrevid']
-    
-    if lastrev_id or not is_new:
-        # Just add the gloss here
-        add_gloss_to_lexeme_sense(lexeme_id, lexeme_sense_id,
-                                  translation_language, translation_value, auth_obj)
+
+            data = {}
+            data['action'] = 'wbeditentity'
+            data['new'] = 'lexeme'
+            data['summary'] = username + '@AGPB-' + app_version
+            data['token'] = csrf_token
+            data['format'] = 'json'
+            data['data'] = json.dumps(lexeme_entry)
+
+            response = requests.post(base_url, data=data, auth=auth).json()
+
+            if 'error' in response:
+                return {
+                    'info': 'Unable to edit. Please check credentials',
+                    'status_code': 503
+                }
+            lastrev_id = response['entity']['lastrevid']
+            result_object[response['entity']['id']] = lastrev_id
+
+        if lastrev_id or bool(data['is_new']) is False:
+            print(data['lexeme_id'])
+            # Just add the gloss here
+            return add_gloss_to_lexeme_sense(data['lexeme_id'], data['lexeme_sense_id'],
+                                    data['translation_language'], data['translation_value'],
+                                    csrf_token, auth, result_object)
+    return {
+        'error': 'No edit was made please check the data',
+        'status_code': 503
+    }
 
 
-
-def add_gloss_to_lexeme_sense(lexeme_id, sense_id, gloss_language, gloss_value, auth_obj):
+def add_gloss_to_lexeme_sense(lexeme_id, sense_id, gloss_language,
+                              gloss_value, csrf_token, auth, result_obj):
     """
     Adds a new gloss to an existing lexeme sense in Wikidata.
 
@@ -350,18 +359,6 @@ def add_gloss_to_lexeme_sense(lexeme_id, sense_id, gloss_language, gloss_value, 
         username (str): The username of the editor for the summary.
         auth_obj (dict): The authentication object with access_token and access_secret.
     """
-    # Step 1: Get a CSRF token for the edit
-    try:
-        csrf_token, auth = generate_csrf_token(base_url, consumer_key,
-                                               consumer_secret,
-                                               auth_obj['access_token'],
-                                               auth_obj['access_secret'])
-    except Exception as e:
-        return {
-            'info': f'Failed to generate CSRF token: {e}',
-            'status_code': 500
-        }
-
     # We get the current lexeme
     # Then get its avoid edit conflicts
     get_params = {
@@ -433,9 +430,8 @@ def add_gloss_to_lexeme_sense(lexeme_id, sense_id, gloss_language, gloss_value, 
             'status_code': 503
         }
 
-    return {
-        'revisionid': response.get('entity', {}).get('lastrevid')
-    }
+    result_obj[lexeme_id] = response.get('entity', {}).get('lastrevid')
+    return result_obj
 
 
 def add_audio_to_lexeme(username, language_qid, lang_label,
@@ -444,7 +440,7 @@ def add_audio_to_lexeme(username, language_qid, lang_label,
     csrf_token, api_auth_token = generate_csrf_token(base_url,
                                                      consumer_key,
                                                      consumer_secret,
-                                                     auth_object['access_token'],
+                                                     auth_object['acces_token'],
                                                      auth_object['access_secret'])
     params = {}
     params['format'] = 'json'
@@ -511,3 +507,13 @@ def get_auth_object(consumer_key, consumer_secret, decoded_token):
         "access_token": decoded_token.get('access_token')['key'],
         "access_secret": decoded_token.get('access_token')['secret'],
     }
+
+
+
+def validate_translation_request_body(request_body, schema):
+    try:
+        validate(instance=request_body, schema=schema)
+        return True
+    except ValidationError as e:
+        print(f"Validation error: {e.message}")
+        return False
