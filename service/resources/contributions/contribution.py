@@ -15,7 +15,7 @@ contrib_args.add_argument('data', type=str, help="Please provide the edit data")
 # Used for serialization
 contributionFields = {
     'id': fields.Integer,
-    'usename': fields.String,
+    'username': fields.String,
     'lang_code': fields.String,
     'edit_type': fields.String,
     'data': fields.String
@@ -48,10 +48,10 @@ class ContributionPost(Resource):
 class ContributionGet(Resource):
     @marshal_with(contributionFields)
     def get(self, id):
-        user = ContributionModel.query.filter_by(id=id).first()
-        if not user:
+        contributions = ContributionModel.query.filter_by(id=id).first()
+        if not contributions:
             abort(400, "User not found")
-        return user, 200
+        return contributions, 200
 
 
 class ContributionPatch(Resource):

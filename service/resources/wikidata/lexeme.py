@@ -10,7 +10,6 @@ from .utils import (lexemes_search, get_lexeme_sense_glosses,
                     add_audio_to_lexeme, get_auth_object,
                     add_gloss_to_lexeme_sense, validate_translation_request_body)
 from common import consumer_key, consumer_secret
-from service.models import ContributionModel
 
 
 # Used for validateion

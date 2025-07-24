@@ -1,6 +1,7 @@
 import json
 import sys
 import base64
+import datetime
 import requests
 from wikidata.client import Client
 from common import (base_url, consumer_key, wm_commons_image_base_url,
@@ -8,6 +9,8 @@ from common import (base_url, consumer_key, wm_commons_image_base_url,
                     sparql_endpoint_url, commons_url)
 from difflib import get_close_matches
 from jsonschema import validate, ValidationError
+from service import db
+from service.models import ContributionModel
 from service.utils.languages import getLanguages
 from service.resources.utils import make_api_request
 from service.resources.commons.utils import upload_file
@@ -507,9 +510,21 @@ def add_audio_to_lexeme(username, auth_object, audio_data):
                 'lexeme_id': data['formid'].split('-')[0],
                 'revisionid': revision_id
             })
+
+            # Record contribution on tool
+            contribution = ContributionModel(wd_item=data['formid'].split('-')[0],
+                                             username=username,
+                                             lang_code=data['lang_label'],
+                                             edit_type='audio',
+                                             data=data['formid'] + '-' + file_name,
+                                             date=datetime.datetime.now())
+            db.session.add(contribution)
+            db.session.commit()
+
         except Exception as e:
-            return {'error': 'Qualifier could not be added' + str(e)}
-        
+            db.session.rollback()
+            return {'error': 'Qualifier could not be added: ' + str(e)}
+
     return {'results': results}
 
 def get_auth_object(consumer_key, consumer_secret, decoded_token):
