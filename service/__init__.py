@@ -5,11 +5,13 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_restful import Api, MethodNotAllowed, NotFound
 from flask_swagger_ui import get_swaggerui_blueprint
 from flask_login import LoginManager
+from flask_cors import CORS
 
 from common import (domain, port, prefix, build_swagger_config_json,
                     app_secret, is_dev)
 
 app = Flask(__name__, template_folder='../templates')
+CORS(app)
 login_manager = LoginManager()
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -33,6 +35,16 @@ swaggerui_blueprint = get_swaggerui_blueprint(
 )
 
 app.register_blueprint(swaggerui_blueprint, url_prefix=prefix)
+
+@app.after_request
+def after_request(response):
+    response.headers.add(
+        "Access-Control-Allow-Headers", "Content-Type,Authorization,true"
+    )
+    response.headers.add(
+        "Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS"
+    )
+    return response
 
 
 # Errors
