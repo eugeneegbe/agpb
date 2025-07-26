@@ -200,7 +200,6 @@ class LexemesGet(Resource):
 class LexemesTranslate(Resource):
     def post(self):
         request_body = request.get_json()
-        print(request_body)
         if not request_body:
             abort(400, 'Request body is empty')
 
