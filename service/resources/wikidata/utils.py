@@ -298,21 +298,21 @@ def translate_new_lexeme(translation_data, username, auth_obj):
                                            auth_obj['access_token'],
                                            auth_obj['access_secret'])
     result_object = {}
-    for data in translation_data:
-        bool(data['is_new'] is True)
+    for trans_data in translation_data:
+
         lastrev_id = None
-        if data['is_new'] is True:
+        if trans_data['is_new'] is True:
         # New Lexeme needs to be created then returned
-            _, _, lqid = get_language_qid(data['translation_language'])
+            _, _, lqid = get_language_qid(trans_data['translation_language'])
 
             lexeme_entry = {
                 'lemmas': {
-                    data['translation_language']: {
-                        'language': data['translation_language'],
-                        'value': data['translation_value']
+                    trans_data['translation_language']: {
+                        'language': trans_data['translation_language'],
+                        'value': trans_data['translation_value']
                     }
                 },
-                'lexicalCategory': str(data['categoryId']),
+                'lexicalCategory': str(trans_data['categoryId']),
                 'language': lqid
             }
 
@@ -334,11 +334,13 @@ def translate_new_lexeme(translation_data, username, auth_obj):
             lastrev_id = response['entity']['lastrevid']
             result_object[response['entity']['id']] = lastrev_id
 
-        if lastrev_id or bool(data['is_new']) is False:
+        if lastrev_id or bool(trans_data['is_new']) is False:
             # Just add the gloss here
-            return add_gloss_to_lexeme_sense(data['lexeme_id'], data['lexeme_sense_id'],
-                                    data['translation_language'], data['translation_value'],
-                                    username, csrf_token, auth, result_object)
+            return add_gloss_to_lexeme_sense(trans_data['lexeme_id'],
+                                             trans_data['lexeme_sense_id'],
+                                             trans_data['translation_language'],
+                                             trans_data['translation_value'], username,
+                                             csrf_token, auth, result_object)
     return {
         'error': 'No edit was made please check the data',
         'status_code': 503
