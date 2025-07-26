@@ -198,7 +198,8 @@ class LexemesGet(Resource):
 
 
 class LexemesTranslate(Resource):
-    def post(self):
+    @token_required
+    def post(self, data):
         request_body = request.get_json()
         if not request_body:
             abort(400, 'Request body is empty')
@@ -294,7 +295,7 @@ class LexemeAudioAdd(Resource):
 class LexemeGlossAdd(Resource):
     @token_required
     @marshal_with(LexemeGlossAddFields)
-    def post(self):
+    def post(self, data):
         args = lexeme_gloss_add_args.parse_args()
 
         if args['lexeme_id'] is None or args['sense_id'] is None or \
