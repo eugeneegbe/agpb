@@ -26,13 +26,13 @@ authGetFields = {
 class AuthGet(Resource):
     @marshal_with(authGetFields)
     def get(self):
-        redirect_base_url = dev_fe_url if bool(is_dev) is True else prod_fe_url
         if current_user.is_authenticated:
             user = UserModel.query.filter_by(username=current_user.username).first()
             token = jwt.encode({'token': user.temp_token,
                                 'access_token': session.get('access_token', None),
                                 'exp': datetime.utcnow() + timedelta(minutes=45)},
                                consumer_secret, "HS256")
+            redirect_base_url = dev_fe_url if bool(is_dev) is True else prod_fe_url
             return {
                 "redirect_string": redirect_base_url
             }, 302
