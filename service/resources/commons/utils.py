@@ -51,7 +51,7 @@ def upload_file(file_data, username, lang_label, auth, file_name):
     params['filename'] = file_name
     params['token'] = csrf_token
     params['text'] = "\n== {{int:license-header}} ==\n{{cc-by-sa-4.0}}\n\n[[Category:" +\
-                     lang_label + " Pronunciation]]"
+                     "AGPB-" + lang_label + "-Pronunciation]]"
 
     try:
         response = requests.post(commons_url,
