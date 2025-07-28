@@ -36,15 +36,15 @@ def token_required(f):
         if 'x-access-tokens' in request.headers:
             token = request.headers['x-access-tokens']
         if token is None:
-            raise PermissionDeniedError()
+            abort(401, description="Insufficient permission to access resource.")
         try:
             data = jwt.decode(token, consumer_secret, algorithms=["HS256"])
         except jwt.ExpiredSignatureError:
-            raise TokenExpiredError()
+            abort(401, description="Token has expired.")
         except jwt.InvalidTokenError:
-            raise InvalidTokenError()
+            abort(401, description="Invalid Token.")
         except Exception as e:
-            raise TokenDecodeError(str(e))
+            abort(401, description="Error decoding token" + str(e))
         current_user = UserModel.query.filter_by(temp_token=data['token']).first()
         if not current_user:
             raise InvalidTokenError()
