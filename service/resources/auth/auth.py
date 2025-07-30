@@ -17,6 +17,8 @@ from .utils import generate_random_token
 # Used for serialization
 authFields = {
     'token': fields.String,
+    'username': fields.String,
+    'pref_langs': fields.String
 }
 authGetFields = {
     'redirect_string': fields.String,
@@ -49,7 +51,6 @@ class AuthGet(Resource):
                 abort(400, 'mwoauth.initiate failed: ' + str(e))
             session['request_token'] = dict(zip(
                 request_token._fields, request_token))
-            print('redirect_string', redirect_string)
             return {
                 "redirect_string": redirect_string
             }, 200
@@ -105,7 +106,9 @@ class AuthCallBackPost(Resource):
                                consumer_secret, "HS256")
             login_user(user)
             return {
-                'token': token
+                'token': token,
+                'username': current_user.username,
+                'pref_langs': user.pref_langs
             }, 200
 
         else:

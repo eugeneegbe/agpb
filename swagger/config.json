@@ -789,6 +789,14 @@
                     "token": {
                       "type": "string",
                       "example": ".WJLKFJUHFLkljasdlkfjdsafjdslakfjlkasdjfajsdlkfjsadf"
+                    },
+                    "username": {
+                      "type": "string",
+                      "example": "Eugene233"
+                    },
+                    "pref_langs": {
+                      "type": "string",
+                      "example": "en,fr"
                     }
                   }
                 }
