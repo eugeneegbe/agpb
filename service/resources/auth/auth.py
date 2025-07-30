@@ -36,7 +36,7 @@ class AuthGet(Resource):
                                consumer_secret, "HS256")
             redirect_base_url = dev_fe_url if bool(is_dev) is True else prod_fe_url
             return {
-                "redirect_string": redirect_base_url
+                "redirect_string": redirect_base_url + "oauth-callback?token=" + str(token)
             }, 302
 
         else:
