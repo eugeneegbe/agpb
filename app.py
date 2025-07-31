@@ -36,16 +36,15 @@ api.add_resource(ContributionGet, '/contribution/<int:id>')
 api.add_resource(ContributionPatch, '/contribution/<int:id>')
 api.add_resource(ContributionDelete, '/contribution/<int:id>')
 
-api.add_resource(LanguagesGet, '/languages/')
+api.add_resource(LanguagesGet, '/languages')
 api.add_resource(LanguageGet, '/languages/<string:lang_code>')
 
-api.add_resource(LexemesGet, '/lexemes/')
+api.add_resource(LexemesGet, '/lexemes')
 api.add_resource(LexemesTranslate, '/lexemes/translations/add')
 api.add_resource(LexemeGlossesGet, '/lexemes/<string:id>/translations')
 api.add_resource(LexemeFormsAudiosLackGet, '/lexeme/language/forms')
 api.add_resource(LexemeAudioAdd, '/lexeme/audio/add')
 api.add_resource(LexemesMissingAudioGet, '/lexemes/missing/audio')
-
 
 api.add_resource(CommonsFIleUrLPost, '/file/url/<string:titles>')
 
