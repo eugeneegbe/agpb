@@ -11,7 +11,7 @@ from common import (domain, port, prefix, build_swagger_config_json,
                     app_secret, is_dev)
 
 app = Flask(__name__, template_folder='../templates')
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "*"}}, allow_headers=["Content-Type", "x-access-tokens"])
 login_manager = LoginManager()
 
 basedir = os.path.abspath(os.path.dirname(__file__))
