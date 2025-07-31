@@ -36,16 +36,6 @@ swaggerui_blueprint = get_swaggerui_blueprint(
 
 app.register_blueprint(swaggerui_blueprint, url_prefix=prefix)
 
-@app.after_request
-def after_request(response):
-    response.headers.add(
-        "Access-Control-Allow-Headers", "Content-Type,Authorization,true"
-    )
-    response.headers.add(
-        "Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS"
-    )
-    return response
-
 
 # Errors
 @app.errorhandler(NotFound)
