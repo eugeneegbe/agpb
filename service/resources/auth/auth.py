@@ -47,10 +47,10 @@ class AuthGet(Resource):
             try:
                 redirect_string, request_token = mwoauth.initiate(
                     auth_base_url, consumer_token)
+                session['request_token'] = dict(zip(
+                request_token._fields, request_token))
             except Exception as e:
                 abort(400, 'mwoauth.initiate failed: ' + str(e))
-            session['request_token'] = dict(zip(
-                request_token._fields, request_token))
             return {
                 "redirect_string": redirect_string
             }, 200
@@ -59,20 +59,21 @@ class AuthGet(Resource):
 class AuthCallBackPost(Resource):
     @marshal_with(authFields)
     def get(self):
+
         if current_user.is_authenticated:
             token = jwt.encode({'token': current_user.temp_token,
                                 'access_token': session.get('access_token', None),
                                 'exp': datetime.utcnow() + timedelta(minutes=45)},
                                consumer_secret, "HS256")
-
+            user = UserModel.query.filter_by(username=current_user.username).first()
             return {
-                'token': token
+                'token': token,
+                'username': current_user.username,
+                'pref_langs': user.pref_langs
             }, 200
 
         if 'request_token' not in session.keys():
-            return jsonify({
-                'message': 'OAuth callback failed. Are cookies disabled?'
-            }), 404
+            abort(400, 'OAuth callback failed. Are cookies disabled?')
 
         consumer_token = mwoauth.ConsumerToken(
             consumer_key, consumer_secret)
@@ -94,7 +95,6 @@ class AuthCallBackPost(Resource):
         session['access_token'] = dict(zip(
             access_token._fields, access_token))
         session['username'] = identity['username']
-
         user = UserModel.query.filter_by(username=session.get('username')).first()
         if user:
             # User already exists, update the temp token
