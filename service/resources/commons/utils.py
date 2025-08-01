@@ -6,7 +6,6 @@ from service.resources.utils import generate_csrf_token
 
 
 def get_media_url_by_title(file_titles):
-    print("Fetching media URLs for titles:", file_titles)
     PARAMS = {
         "action": "query",
         "titles": file_titles,

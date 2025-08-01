@@ -215,7 +215,6 @@ class LexemesTranslate(Resource):
             return {
                 'message': 'Access token is missing in the decoded token'
             }, 400
-        print('Decoded token for edit', decoded_token)
         auth_obj = get_auth_object(consumer_key, consumer_secret, decoded_token)
         result = translate_new_lexeme(request_body, current_user.username, auth_obj)
 
@@ -280,10 +279,7 @@ class LexemeAudioAdd(Resource):
         except Exception as e:
             abort(401, 'User may not be authenticated')
 
-        auth_obj = {
-            "access_token": decoded_token.get('access_token')['key'],
-            "access_secret": decoded_token.get('access_token')['secret'],
-        }
+        auth_obj = get_auth_object(consumer_key, consumer_secret, decoded_token)
         results = add_audio_to_lexeme(current_user.username, auth_obj, request_body)
 
         if 'error' in results:

@@ -463,7 +463,6 @@ def add_audio_to_lexeme(username, auth_object, audio_data):
         revision_id = None
         upload_response = upload_file(base64.b64decode(data['file_content']), username,
                                     data['lang_label'], auth_object, data['filename'])
-        print('upload_response', upload_response)
         file_name = data['filename']
         if 'duplicate' in upload_response.json()['upload']['warnings']:
             file_name = upload_response.json()['upload']['warnings']['duplicate'][0]

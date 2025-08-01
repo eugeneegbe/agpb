@@ -49,7 +49,6 @@ def generate_csrf_token(url, app_key, app_secret, user_key, user_secret):
 
         token_request.raise_for_status()
         if 'error' in list(token_request.json().keys()):
-            print('error now going back')
             return {
                 'info': 'Unable to get csrf token check user edit tokens',
                 'status_code': 503
