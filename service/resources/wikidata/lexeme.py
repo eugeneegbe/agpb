@@ -215,7 +215,7 @@ class LexemesTranslate(Resource):
             return {
                 'message': 'Access token is missing in the decoded token'
             }, 400
-
+        print('Decoded token for edit', decoded_token)
         auth_obj = get_auth_object(consumer_key, consumer_secret, decoded_token)
         result = translate_new_lexeme(request_body, current_user.username, auth_obj)
 

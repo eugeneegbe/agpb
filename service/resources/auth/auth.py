@@ -113,8 +113,8 @@ class AuthCallBackPost(Resource):
 
         else:
             # User does not exist, create a new one
-            user = UserModel(username=session.get('username'), pref_langs='de,en', temp_token=generate_random_token())
-            db.session.add(user)
+            new_user = UserModel(username=session.get('username'), pref_langs='de,en', temp_token=generate_random_token())
+            db.session.add(new_user)
             try:
                 db.session.commit()
             except Exception as e:
@@ -122,21 +122,20 @@ class AuthCallBackPost(Resource):
                 return {
                     'message': f"Error creating user: {str(e)}"
                 }, 400
-            token = jwt.encode({'token': user.temp_token,
+            token = jwt.encode({'token': new_user.temp_token,
                                 'access_token': session.get('access_token', None),
                                 'exp': datetime.utcnow() + timedelta(minutes=45)},
                                consumer_secret, "HS256")
-            login_user(user)
+            login_user(new_user)
             return {
-                'token': token
+                'token': token,
+                'username': new_user.username,
+                'pref_langs': new_user.pref_langs
             }, 200
 
 
 class AuthLogout(Resource):
     def get(self):
-        if current_user.is_authenticated:
-            logout_user()
-            session.clear()
-            return make_response(jsonify({'message': 'Logged out successfully'}), 200)
-        else:
-            return make_response(jsonify({'message': 'User is not authenticated'}), 401)
+        logout_user()
+        session.clear()
+        return make_response(jsonify({'message': 'Logged out successfully'}), 200)

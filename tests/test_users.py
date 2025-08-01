@@ -34,7 +34,6 @@ class TestUser(unittest.TestCase):
 
     def test_get_user(self):
         response = self.app.get('/api/users/1', follow_redirects=True)
-        print('response', response.data)
         self.assertEqual(response.status_code, 200)
 
 
