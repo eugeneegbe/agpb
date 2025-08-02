@@ -105,6 +105,9 @@ def lexemes_search(search, src_lang, ismatch):
     if 'status_code' in list(wd_search_results.keys()):
         return wd_search_results
 
+    if 'search' not in wd_search_results:
+        return {'error': 'No search results found', 'status_code': 404}
+ 
     search_result_data = process_search_results(wd_search_results['search'],
                                                 search, src_lang, bool(ismatch))
 
@@ -203,7 +206,7 @@ def get_matching_sense_id(lexeme_value, src_lang, senses):
     sense_id = None
     for sense in senses:
         if 'glosses' in sense and \
-            sense['glosses'][src_lang]['value'] == lexeme_value:
+            sense['glosses'][src_lang]:
             sense_id = sense['id']
             break
     return sense_id
@@ -217,11 +220,10 @@ def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
     if image is not None:
         media = get_image_url(image[0]['mainsnak']['datavalue']['value'])
 
-    matched_sense_id = get_matching_sense_id(lexeme_data['lemmas'][src_lang]['value'],
-                                              src_lang,
+    lemma_value = lexeme_data['lemmas'][src_lang]['value']
+    matched_sense_id = get_matching_sense_id(lemma_value, src_lang,
                                               lexeme_data.get('senses', []))
-    matched_form_id = get_matching_form_id(lexeme_data['lemmas'][src_lang]['value'],
-                                           src_lang,
+    matched_form_id = get_matching_form_id(lemma_value, src_lang,
                                            lexeme_data.get('forms', []))
     lexeme = {
         'id': lexeme_data['id'],
@@ -271,7 +273,8 @@ def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
             form_claims = form.get('claims', None)
             if form_claims and 'P443' in form_claims:
                 for audio_claim in form_claims['P443']:
-                    if sense_gloss['gloss']['value'] in audio_claim['mainsnak']['datavalue']['value']:
+                    value = sense_gloss['gloss']['value']
+                    if value is not None and value in audio_claim['mainsnak']['datavalue']['value']:
                         audio = audio_claim['mainsnak']['datavalue']['value']
                         url = get_wikimedia_commons_url(audio, commons_url)
                         sense_gloss['gloss']['audio'] = url 
