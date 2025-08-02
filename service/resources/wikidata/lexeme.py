@@ -191,7 +191,7 @@ class LexemesGet(Resource):
     def post(self):
         args = lexeme_args.parse_args()
         # TODO: Add arguments check
-        if not args['search'] or not args['src_lang']:
+        if args['search'] is None or args['src_lang'] is None:
             abort(400, f'Please provide required parameters {str(list(args.keys()))}')
 
         lexemes = lexemes_search(args['search'], args['src_lang'],
