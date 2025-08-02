@@ -271,8 +271,8 @@ def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
             form_claims = form.get('claims', None)
             if form_claims and 'P443' in form_claims:
                 for audio_claim in form_claims['P443']:
-                    audio = audio_claim['mainsnak']['datavalue']['value']
-                    if sense_gloss['gloss']['value'] in audio:
+                    if sense_gloss['gloss']['value'] in audio_claim['mainsnak']['datavalue']['value']:
+                        audio = audio_claim['mainsnak']['datavalue']['value']
                         url = get_wikimedia_commons_url(audio, commons_url)
                         sense_gloss['gloss']['audio'] = url 
                         break

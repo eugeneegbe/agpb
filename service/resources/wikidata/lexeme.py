@@ -236,7 +236,8 @@ class LexemeGlossesGet(Resource):
         args = lexeme_gloss_args.parse_args()
         if id is None or (args['lang_1'] is None and args['lang_2'] is None) or \
             args['src_lang'] is None:
-            abort(400, f'Please provide required parameters {str(list(args.keys()))}')
+            keys = ', '.join(list(args.keys()))
+            abort(400, f'Please provide required parameters: {keys}')
 
         lexeme_glosses = get_lexeme_sense_glosses(args['id'], args['src_lang'],
                                                   args['lang_1'], args['lang_2'])
