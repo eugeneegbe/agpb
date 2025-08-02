@@ -234,7 +234,7 @@ class LexemeGlossesGet(Resource):
     def post(self, id):
         print('were are here')
         args = lexeme_gloss_args.parse_args()
-        if id is None or args['lang_1'] is None or args['lang_2'] is None or \
+        if id is None or (args['lang_1'] is None and args['lang_2'] is None) or \
             args['src_lang'] is None:
             abort(400, f'Please provide required parameters {str(list(args.keys()))}')
 
