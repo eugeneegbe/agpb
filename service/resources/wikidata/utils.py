@@ -16,6 +16,7 @@ from service.resources.utils import make_api_request
 from service.resources.commons.utils import upload_file
 from service.resources.utils import generate_csrf_token
 from SPARQLWrapper import SPARQLWrapper, JSON
+from pyWikiCommons import pyWikiCommons
 
 
 def get_lexemes_lacking_audio(lang_qid, lang_code, page_size=15, page=1):
@@ -147,6 +148,41 @@ def get_default_gloss(lang):
         'formId': None
     }
 
+def get_wikimedia_commons_url(file_name, api_url):
+    """
+    Get the URL of an audio file in Wikimedia Commons given the file name.
+
+    Args:
+    file_name (str): The name of the file in Wikimedia Commons.
+
+    Returns:
+    str: The URL of the file.
+    """
+    # Parameters for the API request
+    params = {
+        "action": "query",
+        "titles": f"File:{file_name}",
+        "prop": "imageinfo",
+        "iiprop": "url",
+        "format": "json"
+    }
+
+    # Make the API request
+    response = requests.get(api_url, params=params)
+    data = response.json()
+
+    # Extract the URL from the response
+    pages = data.get("query", {}).get("pages", {})
+    if pages:
+        page_id = next(iter(pages))
+        image_info = pages[page_id].get("imageinfo", [])
+        if image_info:
+            return image_info[0].get("url")
+        else:
+            return None
+    else:
+        None
+
 
 def get_matching_form_id(lexeme_value, src_lang, forms):
     """
@@ -236,9 +272,10 @@ def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
             form_claims = form.get('claims', None)
             if form_claims and 'P443' in form_claims:
                 for audio_claim in form_claims['P443']:
-                    if sense_gloss['gloss']['value'] in audio_claim['mainsnak']['datavalue']['value']:
-                        sense_gloss['gloss']['audio'] = wm_commons_audio_base_url + \
-                            audio_claim['mainsnak']['datavalue']['value']
+                    audio = audio_claim['mainsnak']['datavalue']['value']
+                    if sense_gloss['gloss']['value'] in audio:
+                        url = get_wikimedia_commons_url(audio, commons_url)
+                        sense_gloss['gloss']['audio'] = url 
                         break
             else:
                 sense_gloss['gloss']['audio'] = None
