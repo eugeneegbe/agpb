@@ -20,7 +20,12 @@ lex_form_without_audio_args = reqparse.RequestParser()
 lex_audio_add_args = reqparse.RequestParser()
 lexeme_gloss_add_args = reqparse.RequestParser()
 lexeme_missing_audio_args = reqparse.RequestParser()
+lexeme_gloss_args = reqparse.RequestParser()
 
+lexeme_gloss_args.add_argument('src_lang', type=str, help="Source language is required")
+lexeme_gloss_args.add_argument('id', type=str, help="Lexeme ID is required")
+lexeme_gloss_args.add_argument('lang_1', type=str, help="Provide the first language")
+lexeme_gloss_args.add_argument('lang_2', type=str, help="Provide the second language")
 
 lexeme_args.add_argument('search', type=str, help="Please provide a search term")
 lexeme_args.add_argument('src_lang', type=str, help="Source language is required")
@@ -227,8 +232,10 @@ class LexemesTranslate(Resource):
 class LexemeGlossesGet(Resource):
     @marshal_with(lexeme_response_fields)
     def post(self, id):
-        args = lexeme_args.parse_args()
-        if not id or not args['lang_1'] or not args['lang_2'] or not args['src_lang']:
+        print('were are here')
+        args = lexeme_gloss_args.parse_args()
+        if id is None or args['lang_1'] is None or args['lang_2'] is None or \
+            args['src_lang'] is None:
             abort(400, f'Please provide required parameters {str(list(args.keys()))}')
 
         lexeme_glosses = get_lexeme_sense_glosses(args['id'], args['src_lang'],

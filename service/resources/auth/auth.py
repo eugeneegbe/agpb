@@ -28,32 +28,18 @@ authGetFields = {
 class AuthGet(Resource):
     @marshal_with(authGetFields)
     def get(self):
-        if current_user.is_authenticated:
-            user = UserModel.query.filter_by(username=current_user.username).first()
-            token = jwt.encode({'token': user.temp_token,
-                                'access_token': session.get('access_token', None),
-                                'exp': datetime.utcnow() + timedelta(minutes=45)},
-                               consumer_secret, "HS256")
-            redirect_base_url = dev_fe_url if bool(is_dev) is True else prod_fe_url
-            return {
-                "redirect_string": redirect_base_url + "oauth-callback?token=" + str(token)
-            }, 302
-
-        else:
-            print('User is not authenticated, starting OAuth handshake')
-
-            consumer_token = mwoauth.ConsumerToken(
-                consumer_key, consumer_secret)
-            try:
-                redirect_string, request_token = mwoauth.initiate(
-                    auth_base_url, consumer_token)
-                session['request_token'] = dict(zip(
-                request_token._fields, request_token))
-            except Exception as e:
-                abort(400, 'mwoauth.initiate failed: ' + str(e))
-            return {
-                "redirect_string": redirect_string
-            }, 200
+        consumer_token = mwoauth.ConsumerToken(
+            consumer_key, consumer_secret)
+        try:
+            redirect_string, request_token = mwoauth.initiate(
+                auth_base_url, consumer_token)
+            session['request_token'] = dict(zip(
+            request_token._fields, request_token))
+        except Exception as e:
+            abort(400, 'mwoauth.initiate failed: ' + str(e))
+        return {
+            "redirect_string": redirect_string
+        }, 200
 
 
 class AuthCallBackPost(Resource):

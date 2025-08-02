@@ -630,7 +630,7 @@
         }
       }
     },
-    "/lexemes/{id}/translations/": {
+    "/lexemes/{id}/translations": {
       "post": {
         "tags": [
           "lexeme"
