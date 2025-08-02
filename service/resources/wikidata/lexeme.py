@@ -234,6 +234,8 @@ class LexemeGlossesGet(Resource):
     def post(self, id):
         print('were are here')
         args = lexeme_gloss_args.parse_args()
+        if args['lang_1'] == args['lang_2']:
+            abort(401, f'Target languages should not be the same')
         if id is None or (args['lang_1'] is None and args['lang_2'] is None) or \
             args['src_lang'] is None:
             keys = ', '.join(list(args.keys()))
