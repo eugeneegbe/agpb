@@ -16,7 +16,6 @@ from service.resources.utils import make_api_request
 from service.resources.commons.utils import upload_file
 from service.resources.utils import generate_csrf_token
 from SPARQLWrapper import SPARQLWrapper, JSON
-from pyWikiCommons import pyWikiCommons
 
 
 def get_lexemes_lacking_audio(lang_qid, lang_code, page_size=15, page=1):
