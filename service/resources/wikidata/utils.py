@@ -303,10 +303,11 @@ def get_lexeme_sense_glosses(lexeme_id, src_lang, lang_1, lang_2):
     if 'status_code' in list(lexeme_senses_data.keys()):
         return lexeme_senses_data
 
-    if 'P18' in lexeme_senses_data['entities'][lexeme_id]['senses'][0]['claims']:
-        image = lexeme_senses_data['entities'][lexeme_id]['senses'][0]['claims']['P18']
-    else:
-        image = None
+    image = None
+    if len(lexeme_senses_data['entities'][lexeme_id]['senses']) > 0:
+        if 'P18' in lexeme_senses_data['entities'][lexeme_id]['senses'][0]['claims']:
+            image = lexeme_senses_data['entities'][lexeme_id]['senses'][0]['claims']['P18']
+
     glosses_data = process_lexeme_sense_data(lexeme_senses_data['entities'][lexeme_id],
                                              src_lang, lang_1, lang_2, image)
     return glosses_data
