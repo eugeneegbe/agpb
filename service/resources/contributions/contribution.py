@@ -16,6 +16,7 @@ contrib_args.add_argument('data', type=str, help="Please provide the edit data")
 # Used for serialization
 contributionFields = {
     'id': fields.Integer,
+    'wd_item': fields.String,
     'username': fields.String,
     'lang_code': fields.String,
     'edit_type': fields.String,
