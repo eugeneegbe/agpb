@@ -1,5 +1,6 @@
 from flask import abort, request
 import jwt
+from service.models import UserModel
 from service import db
 from flask_restful import (Resource, reqparse,
                            fields, marshal_with)
@@ -221,7 +222,13 @@ class LexemesTranslate(Resource):
                 'message': 'Access token is missing in the decoded token'
             }, 400
         auth_obj = get_auth_object(consumer_key, consumer_secret, decoded_token)
-        result = translate_new_lexeme(request_body, current_user.username, auth_obj)
+
+        # Fetch the user whose temp token is the same as the decoded token
+        user = UserModel.query.filter_by(temp_token=decoded_token['token']).first()
+        if not user:
+            abort(401, 'User not found')
+
+        result = translate_new_lexeme(request_body, user.username, auth_obj)
 
         if 'status_code' in result and result['status_code'] == 503:
             return result, result['status_code']
@@ -270,8 +277,8 @@ class LexemeAudioAdd(Resource):
     @token_required
     @marshal_with(LexemeAudioAddFields)
     def post(self, current_user):
-        if request.base_url != prod_fe_url:
-            abort(403, 'Invalid request URL. Please contribute from production.')
+        # if request.base_url != prod_fe_url:
+        #     abort(403, 'Invalid request URL. Please contribute from production.')
 
         request_body = request.get_json()
         if not request_body:
@@ -294,7 +301,13 @@ class LexemeAudioAdd(Resource):
             abort(401, 'User may not be authenticated')
 
         auth_obj = get_auth_object(consumer_key, consumer_secret, decoded_token)
-        results = add_audio_to_lexeme(current_user.username, auth_obj, request_body)
+
+        # Fetch the user whose temp token is the same as the decoded token
+        user = UserModel.query.filter_by(temp_token=decoded_token['token']).first()
+        if not user:
+            abort(401, 'User not found')
+
+        results = add_audio_to_lexeme(user.username, auth_obj, request_body)
 
         if 'error' in results:
             abort(503, results)
