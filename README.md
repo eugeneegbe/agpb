@@ -24,11 +24,3 @@ pip3 install --upgrade pip
 ```bash
 python app.py
 ```
-
-
-To compile the src js to usable js:
-
-```
-npm run build
-```
-This will use Webpack and Babel to turn the code you wrote into something that can be understood.
