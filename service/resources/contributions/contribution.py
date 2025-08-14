@@ -1,4 +1,5 @@
 from flask import abort
+from flask import request
 from flask_restful import (Resource, reqparse,
                            fields, marshal_with)
 from service.models import ContributionModel
@@ -25,11 +26,13 @@ contributionFields = {
 class ContributionsGet(Resource):
     @marshal_with(contributionFields)
     def get(self):
-        try:
+        username = request.args.get('username')
+        if username:
+            contributions = ContributionModel.query.filter_by(username=username).all()     
+        else:
             contributions = ContributionModel.query.all()
-            return contributions
-        except Exception as e:
-            abort(500, 'Table might not exist')
+        return contributions
+
 
 class ContributionPost(Resource):
     @marshal_with(contributionFields)
