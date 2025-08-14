@@ -243,7 +243,8 @@
             "in": "username",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "example": "Eugene233"
             },
             "description": "username of the user to filter contributions"
           }
