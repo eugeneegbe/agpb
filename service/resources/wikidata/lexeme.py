@@ -9,7 +9,7 @@ from .utils import (lexemes_search, get_lexeme_sense_glosses,
                     translate_new_lexeme, get_lexemes_lacking_audio,
                     add_audio_to_lexeme, get_auth_object,
                     add_gloss_to_lexeme_sense, validate_translation_request_body)
-from common import consumer_key, consumer_secret
+from common import consumer_key, consumer_secret, prod_fe_url
 
 
 # Used for validateion
@@ -205,6 +205,9 @@ class LexemesGet(Resource):
 class LexemesTranslate(Resource):
     @token_required
     def post(self, data):
+        if request.base_url != prod_fe_url:
+            abort(403, 'Invalid request URL. Please contribute from production.')
+
         request_body = request.get_json()
         if not request_body:
             abort(400, 'Request body is empty')
@@ -269,6 +272,9 @@ class LexemeFormsAudiosLackGet(Resource):
 class LexemeAudioAdd(Resource):
     @marshal_with(LexemeAudioAddFields)
     def post(self):
+        if request.base_url != prod_fe_url:
+            abort(403, 'Invalid request URL. Please contribute from production.')
+
         request_body = request.get_json()
         if not request_body:
             abort(400, 'Request body is empty')
