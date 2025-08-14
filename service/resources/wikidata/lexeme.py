@@ -1,5 +1,4 @@
 from flask import abort, request
-from flask_login import current_user
 import jwt
 from service import db
 from flask_restful import (Resource, reqparse,
@@ -204,10 +203,8 @@ class LexemesGet(Resource):
 
 class LexemesTranslate(Resource):
     @token_required
-    def post(self, data):
-        if request.base_url != prod_fe_url:
-            abort(403, 'Invalid request URL. Please contribute from production.')
-
+    @marshal_with(lexeme_response_fields)
+    def post(self, current_user):
         request_body = request.get_json()
         if not request_body:
             abort(400, 'Request body is empty')
@@ -270,8 +267,9 @@ class LexemeFormsAudiosLackGet(Resource):
 
 
 class LexemeAudioAdd(Resource):
+    @token_required
     @marshal_with(LexemeAudioAddFields)
-    def post(self):
+    def post(self, current_user):
         if request.base_url != prod_fe_url:
             abort(403, 'Invalid request URL. Please contribute from production.')
 
@@ -307,7 +305,7 @@ class LexemeAudioAdd(Resource):
 class LexemeGlossAdd(Resource):
     @token_required
     @marshal_with(LexemeGlossAddFields)
-    def post(self, data):
+    def post(self, current_user):
         args = lexeme_gloss_add_args.parse_args()
 
         if args['lexeme_id'] is None or args['sense_id'] is None or \

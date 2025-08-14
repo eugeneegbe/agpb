@@ -2,15 +2,12 @@ from datetime import datetime, timedelta
 import mwoauth
 import json
 import jwt
-from flask import abort, jsonify, request, session, make_response
-
-from flask_restful import (Resource, reqparse,
-                           fields, marshal_with)
+from flask import abort, jsonify, request, make_response
+from flask_restful import (Resource, reqparse, fields, marshal_with)
 from service.models import UserModel
 from service import db
 from common import (auth_base_url, consumer_key, dev_fe_url, prod_fe_url,
                     consumer_secret, is_dev)
-from flask_login import current_user, login_user, logout_user
 from .utils import generate_random_token
 
 
@@ -22,6 +19,7 @@ authFields = {
 }
 authGetFields = {
     'redirect_string': fields.String,
+    'request_token': fields.String,
 }
 
 
@@ -33,33 +31,32 @@ class AuthGet(Resource):
         try:
             redirect_string, request_token = mwoauth.initiate(
                 auth_base_url, consumer_token)
-            session['request_token'] = dict(zip(
-            request_token._fields, request_token))
+            # Return request token in response instead of storing in session
+            request_token_dict = dict(zip(request_token._fields, request_token))
+            request_token_json = json.dumps(request_token_dict)
         except Exception as e:
             abort(400, 'mwoauth.initiate failed: ' + str(e))
         return {
-            "redirect_string": redirect_string
+            "redirect_string": redirect_string,
+            "request_token": request_token_json
         }, 200
 
 
 class AuthCallBackPost(Resource):
     @marshal_with(authFields)
-    def get(self):
-
-        if current_user.is_authenticated:
-            token = jwt.encode({'token': current_user.temp_token,
-                                'access_token': session.get('access_token', None),
-                                'exp': datetime.utcnow() + timedelta(minutes=45)},
-                               consumer_secret, "HS256")
-            user = UserModel.query.filter_by(username=current_user.username).first()
-            return {
-                'token': token,
-                'username': current_user.username,
-                'pref_langs': user.pref_langs
-            }, 200
-
-        if 'request_token' not in session.keys():
-            abort(400, 'OAuth callback failed. Are cookies disabled?')
+    def post(self):
+        # Parse request data
+        parser = reqparse.RequestParser()
+        parser.add_argument('request_token', type=str, required=True, help='Request token is required')
+        parser.add_argument('query_string', type=str, required=True, help='Query string is required')
+        args = parser.parse_args()
+        
+        try:
+            # Parse the request token from JSON
+            request_token_dict = json.loads(args['request_token'])
+            request_token = mwoauth.RequestToken(**request_token_dict)
+        except (json.JSONDecodeError, KeyError, TypeError) as e:
+            abort(400, f'Invalid request token format: {str(e)}')
 
         consumer_token = mwoauth.ConsumerToken(
             consumer_key, consumer_secret)
@@ -67,39 +64,42 @@ class AuthCallBackPost(Resource):
             access_token = mwoauth.complete(
                 auth_base_url,
                 consumer_token,
-                mwoauth.RequestToken(**session['request_token']),
-                request.query_string)
+                request_token,
+                args['query_string'])
 
             identity = mwoauth.identify(
                 auth_base_url, consumer_token, access_token)
 
         except Exception as e:
             return jsonify({
-                'message': 'OAuth callback failed. Are cookies disabled? ' + str(e)
+                'message': f'OAuth callback failed: {str(e)}'
             }), 404
 
-        session['access_token'] = dict(zip(
-            access_token._fields, access_token))
-        session['username'] = identity['username']
-        user = UserModel.query.filter_by(username=session.get('username')).first()
+        username = identity['username']
+        user = UserModel.query.filter_by(username=username).first()
+        
         if user:
             # User already exists, update the temp token
             user.temp_token = generate_random_token()
             db.session.commit()
-            token = jwt.encode({'token': user.temp_token,
-                                'access_token': session.get('access_token', None),
-                                'exp': datetime.utcnow() + timedelta(minutes=45)},
-                               consumer_secret, "HS256")
-            login_user(user)
+            token = jwt.encode({
+                'token': user.temp_token,
+                'access_token': dict(zip(access_token._fields, access_token)),
+                'exp': datetime.utcnow() + timedelta(minutes=45)
+            }, consumer_secret, "HS256")
+            
             return {
                 'token': token,
-                'username': current_user.username,
+                'username': user.username,
                 'pref_langs': user.pref_langs
             }, 200
-
         else:
             # User does not exist, create a new one
-            new_user = UserModel(username=session.get('username'), pref_langs='de,en', temp_token=generate_random_token())
+            new_user = UserModel(
+                username=username, 
+                pref_langs='de,en', 
+                temp_token=generate_random_token()
+            )
             db.session.add(new_user)
             try:
                 db.session.commit()
@@ -108,11 +108,13 @@ class AuthCallBackPost(Resource):
                 return {
                     'message': f"Error creating user: {str(e)}"
                 }, 400
-            token = jwt.encode({'token': new_user.temp_token,
-                                'access_token': session.get('access_token', None),
-                                'exp': datetime.utcnow() + timedelta(minutes=45)},
-                               consumer_secret, "HS256")
-            login_user(new_user)
+                
+            token = jwt.encode({
+                'token': new_user.temp_token,
+                'access_token': dict(zip(access_token._fields, access_token)),
+                'exp': datetime.utcnow() + timedelta(minutes=45)
+            }, consumer_secret, "HS256")
+            
             return {
                 'token': token,
                 'username': new_user.username,
@@ -121,7 +123,24 @@ class AuthCallBackPost(Resource):
 
 
 class AuthLogout(Resource):
-    def get(self):
-        logout_user()
-        session.clear()
-        return make_response(jsonify({'message': 'Logged out successfully'}), 200)
+    def post(self):
+        # Parse token from request
+        parser = reqparse.RequestParser()
+        parser.add_argument('token', type=str, required=True, help='Token is required')
+        args = parser.parse_args()
+        
+        try:
+            # Decode token to get user info
+            data = jwt.decode(args['token'], consumer_secret, algorithms=["HS256"])
+            user = UserModel.query.filter_by(temp_token=data['token']).first()
+            
+            if user:
+                # Invalidate the token by generating a new one
+                user.temp_token = generate_random_token()
+                db.session.commit()
+                
+            return make_response(jsonify({'message': 'Logged out successfully'}), 200)
+        except jwt.InvalidTokenError:
+            return make_response(jsonify({'message': 'Invalid token'}), 400)
+        except Exception as e:
+            return make_response(jsonify({'message': f'Logout error: {str(e)}'}), 500)

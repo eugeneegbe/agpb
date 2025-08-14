@@ -1,15 +1,8 @@
 from datetime import datetime
 from service import db
-from flask_login import UserMixin
-from service import login_manager
 
 
-@login_manager.user_loader
-def load_user(id):
-    return UserModel.query.get(id)
-
-
-class UserModel(db.Model, UserMixin):
+class UserModel(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
