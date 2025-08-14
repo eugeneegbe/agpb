@@ -58,7 +58,7 @@ def upload_file(file_data, username, lang_label, auth, file_name):
                                 auth=api_auth_token,
                                 files={'file': io.BytesIO(file_data)})
     except Exception as e:
-        print('File upload response ', e)
+        print('Failed upload response ', str(e))
     if response.status_code != 200:
         return False
 

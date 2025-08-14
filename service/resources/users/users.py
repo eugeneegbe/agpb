@@ -1,15 +1,14 @@
 from flask import abort
-from flask_login import current_user
 from flask_restful import (Resource, reqparse,
                            fields, marshal_with)
 from service.models import UserModel
 from service.require_token import token_required
 from service import db
 
-# Used for validateion
+# Used for validation
 user_args = reqparse.RequestParser()
 user_args.add_argument('username', type=str, help="Please provide a username")
-user_args.add_argument('pref_langs', type=str, help="Provide a preffered language")
+user_args.add_argument('pref_langs', type=str, help="Provide a preferred language")
 
 # Used for serialization
 userFields = {
@@ -22,12 +21,7 @@ userFields = {
 class UsersGet(Resource):
     @token_required
     @marshal_with(userFields)
-    def get(self, data):
-        if not current_user.is_authenticated:
-            return {
-                "messae": "User is not authenticated"
-            }, 401
-
+    def get(self, current_user):
         users = UserModel.query.all()
         return users
 
@@ -36,7 +30,7 @@ class UserPost(Resource):
     @marshal_with(userFields)
     def post(self):
         args = user_args.parse_args()
-        user = UserModel(username=args['username'], pre_langs=args['pre_langs'])
+        user = UserModel(username=args['username'], pref_langs=args['pref_langs'])
         db.session.add(user)
         db.session.commit()
         users = UserModel.query.all()
@@ -60,7 +54,7 @@ class UserPatch(Resource):
         if not user:
             abort(400, "User not found")
         user.username = args["username"]
-        user.pre_langs = args["pre_langs"]
+        user.pref_langs = args["pref_langs"]
         db.session.commit()
         return user, 200
 

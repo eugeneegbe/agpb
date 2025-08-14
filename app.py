@@ -1,4 +1,4 @@
-from flask import redirect, session, render_template
+from flask import redirect, render_template
 from service import app, api, prefix
 from swagger.swaggerConfig import SwaggerConfig
 from service.resources.users.users import (UsersGet, UserPost, UserGet,
