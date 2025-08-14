@@ -12,7 +12,7 @@ from common import (domain, port, prefix, build_swagger_config_json,
 app = Flask(__name__, template_folder='../templates')
 
 # Configure CORS for token-based authentication
-CORS(app, supports_credentials=False, resources={r"/api/*": {"origins": "*"}})
+CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "*"}})
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'app.sqlite')
