@@ -22,7 +22,7 @@ pip3 install --upgrade pip
 ```
 - Step 4: Run Server with 
 ```bash
-python3 app.py
+python app.py
 ```
 
 
@@ -32,8 +32,3 @@ To compile the src js to usable js:
 npm run build
 ```
 This will use Webpack and Babel to turn the code you wrote into something that can be understood.
-
-<!-- To run the Flask server:
-```
-flask run
-``` -->
