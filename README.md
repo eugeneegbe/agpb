@@ -24,3 +24,6 @@ pip3 install --upgrade pip
 ```bash
 python app.py
 ```
+
+### Further
+For troubleshooting and deployment setup, please refer to [Wikitech](https://wikitech.wikimedia.org/wiki/Help:Toolforge/My_first_Flask_OAuth_tool)
