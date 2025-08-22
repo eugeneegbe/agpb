@@ -1,4 +1,6 @@
+import re
 import json
+import urllib.parse
 import sys
 import base64
 import datetime
@@ -168,9 +170,11 @@ def get_wikimedia_commons_url(file_name, api_url):
         "iiprop": "url",
         "format": "json"
     }
-
+    custom_headers = {
+        'User-Agent': 'AGPB/3.0'
+    }
     # Make the API request
-    response = requests.get(api_url, params=params)
+    response = requests.get(api_url, params=params, headers=custom_headers)
     data = response.json()
 
     # Extract the URL from the response
@@ -272,24 +276,33 @@ def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
                 })
                 break
 
+
+    forms_and_audio = []
+    for form in lexeme_data['forms']:
+        claims = form.get('claims', None)
+        if claims and 'P443' in claims:
+            for audio_claim in claims['P443']:
+                value = audio_claim['mainsnak']['datavalue']['value']
+                if value is not None and value in audio_claim['mainsnak']['datavalue']['value']:
+                    audio = audio_claim['mainsnak']['datavalue']['value']
+                    url = get_wikimedia_commons_url(audio, commons_url)
+                    forms_and_audio.append({
+                        'formId': form['id'],
+                        'audio': url
+                    })
+
     for sense_gloss in processed_data['glosses']:
-        for form in lexeme_data['forms']:
-            if form['id'] != matched_form_id:
+        for form_audio_dict in forms_and_audio:
+            value = sense_gloss['gloss']['value']
+            if value is not None and form_audio_dict['audio'] is not None and \
+                check_exact_match_in_url(str(value),
+                                form_audio_dict['audio']):
+                sense_gloss['gloss']['audio'] = form_audio_dict['audio']
+                sense_gloss['gloss']['formId'] = form_audio_dict['formId']
                 break
-            sense_gloss['gloss']['formId'] = matched_form_id
-            form_claims = form.get('claims', None)
-            if form_claims and 'P443' in form_claims:
-                for audio_claim in form_claims['P443']:
-                    value = sense_gloss['gloss']['value']
-                    if value is not None and value in audio_claim['mainsnak']['datavalue']['value']:
-                        audio = audio_claim['mainsnak']['datavalue']['value']
-                        url = get_wikimedia_commons_url(audio, commons_url)
-                        sense_gloss['gloss']['audio'] = url 
-                        break
             else:
                 sense_gloss['gloss']['audio'] = None
-                break
-
+                sense_gloss['gloss']['formId'] = None
 
     return processed_data
 
@@ -655,3 +668,26 @@ def validate_translation_request_body(request_body, schema):
     except ValidationError as e:
         print(f"Validation error: {e.message}")
         return False
+
+
+def check_exact_match_in_url(word, url):
+    """
+    Checks if a word is an exact match for the filename (minus the extension) in a URL.
+
+    Args:
+        word (str): The word to search for.
+        url (str): The URL string to check.
+
+    Returns:
+        bool: True if the word is an exact match for the filename, False otherwise.
+    """
+    decoded_url = urllib.parse.unquote(url)
+    match = re.search(r'/([^/]+)\.[^/.]+$', decoded_url)
+
+    if match:
+        filename = match.group(1)
+        filename_stripped = re.sub(r'^[a-zA-Z]{2,}-\w{2,}-|^[a-zA-Z]{2}-', '', filename)
+        if re.fullmatch(word, filename_stripped, re.IGNORECASE):
+            return True
+
+    return False
