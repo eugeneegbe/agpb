@@ -220,7 +220,14 @@ def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
     if image is not None:
         media = get_image_url(image[0]['mainsnak']['datavalue']['value'])
 
-    lemma_value = lexeme_data['lemmas'][src_lang]['value']
+    lemma_value = lexeme_data['lemmas'][src_lang]['value'] if src_lang in lexeme_data['lemmas'] else None
+    if not lemma_value:
+        language_name = [name for code, name, _ in getLanguages() if code == src_lang]
+        return {
+            'error': f'Word not found in source language: {language_name[0]}',
+            'status_code': 404
+        }
+
     matched_sense_id = get_matching_sense_id(lemma_value, src_lang,
                                               lexeme_data.get('senses', []))
     matched_form_id = get_matching_form_id(lemma_value, src_lang,
