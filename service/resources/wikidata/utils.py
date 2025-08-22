@@ -417,7 +417,7 @@ def translate_new_lexeme(translation_data, username, auth_obj):
             data = {}
             data['action'] = 'wbeditentity'
             data['new'] = 'lexeme'
-            data['summary'] = username + '@AGPB-' + app_version
+
             data['token'] = csrf_token
             data['format'] = 'json'
             data['data'] = json.dumps(lexeme_entry)
@@ -571,7 +571,6 @@ def add_audio_to_lexeme(username, auth_object, audio_data):
         params = {}
         params['format'] = 'json'
         params['token'] = csrf_token
-        params['summary'] = username + '@AGPB-v' + app_version
         params['action'] = 'wbcreateclaim'
         params['entity'] = data['formid']
         params['property'] = 'P443'
@@ -609,14 +608,12 @@ def add_audio_to_lexeme(username, auth_object, audio_data):
         qualifier_params['value'] = json.dumps({'entity-type': 'item', 'id': qualifier_value})
         qualifier_params['format'] = 'json'
         qualifier_params['token'] = csrf_token
-        qualifier_params['summary'] = username + '@AGPB-v' + app_version
 
         try:
             qual_response = requests.post(base_url, data=qualifier_params,
                                         auth=api_auth_token)
-
             qualifier_params = qual_response.json()
-
+            
             if qual_response.status_code != 200:
                 return {'error': 'Qualifier could not be added'}
         
