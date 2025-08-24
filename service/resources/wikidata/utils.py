@@ -203,14 +203,14 @@ def get_matching_form_id(lexeme_value, src_lang, forms):
     return form_id
 
 
-def get_matching_sense_id(lexeme_value, src_lang, senses):
+def get_matching_sense_id(src_lang, senses):
     """
     Returns the sense ID matching lexeme value in source language.
     """
     sense_id = None
     for sense in senses:
         if 'glosses' in sense and \
-            sense['glosses'][src_lang]:
+            src_lang in sense['glosses'].keys():
             sense_id = sense['id']
             break
     return sense_id
@@ -232,8 +232,8 @@ def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
             'status_code': 404
         }
 
-    matched_sense_id = get_matching_sense_id(lemma_value, src_lang,
-                                              lexeme_data.get('senses', []))
+    matched_sense_id = get_matching_sense_id(src_lang,
+                                             lexeme_data.get('senses', []))
     matched_form_id = get_matching_form_id(lemma_value, src_lang,
                                            lexeme_data.get('forms', []))
     lexeme = {
