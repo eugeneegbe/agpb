@@ -239,7 +239,6 @@ class LexemesTranslate(Resource):
 class LexemeGlossesGet(Resource):
     @marshal_with(lexeme_response_fields)
     def post(self, id):
-        print('were are here')
         args = lexeme_gloss_args.parse_args()
         if args['lang_1'] == args['lang_2']:
             abort(401, f'Target languages should not be the same')
