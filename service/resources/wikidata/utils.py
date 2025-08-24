@@ -134,16 +134,6 @@ def get_image_url(file_name):
 def get_default_gloss(lang):
     """
     Returns a default gloss dictionary for the specified language.
-
-    Args:
-        lang (str): The language code for the gloss.
-
-    Returns:
-        dict: A dictionary with the following keys:
-            - 'language': The provided language code.
-            - 'value': None (default value).
-            - 'audio': None (default value).
-            - 'formId': None (default value).
     """
     return {
         'language': lang,
@@ -152,17 +142,11 @@ def get_default_gloss(lang):
         'formId': None
     }
 
+
 def get_wikimedia_commons_url(file_name, api_url):
     """
     Get the URL of an audio file in Wikimedia Commons given the file name.
-
-    Args:
-    file_name (str): The name of the file in Wikimedia Commons.
-
-    Returns:
-    str: The URL of the file.
     """
-    # Parameters for the API request
     params = {
         "action": "query",
         "titles": f"File:{file_name}",
@@ -173,138 +157,152 @@ def get_wikimedia_commons_url(file_name, api_url):
     custom_headers = {
         'User-Agent': 'AGPB/3.0'
     }
-    # Make the API request
     response = requests.get(api_url, params=params, headers=custom_headers)
     data = response.json()
 
-    # Extract the URL from the response
     pages = data.get("query", {}).get("pages", {})
     if pages:
         page_id = next(iter(pages))
         image_info = pages[page_id].get("imageinfo", [])
         if image_info:
             return image_info[0].get("url")
-        else:
-            return None
-    else:
-        None
+    return None
 
 
 def get_matching_form_id(lexeme_value, src_lang, forms):
     """
     Returns the sense ID matching lexeme value in source language.
+    Optimized for readability and efficiency using a generator expression.
     """
-    form_id = None
-    for form in forms:
-        if 'representations' in form and \
-            form['representations'][src_lang]['value'] == lexeme_value:
-            form_id = form['id']
-            break
-    return form_id
+    return next((form['id'] for form in forms 
+                 if form.get('representations', {}).get(src_lang, {}).get('value') == lexeme_value), None)
 
 
 def get_matching_sense_id(src_lang, senses):
     """
     Returns the sense ID matching lexeme value in source language.
+    Optimized for readability and efficiency using a generator expression.
     """
-    sense_id = None
-    for sense in senses:
-        if 'glosses' in sense and \
-            src_lang in sense['glosses'].keys():
-            sense_id = sense['id']
-            break
-    return sense_id
+    return next((sense['id'] for sense in senses 
+                 if sense.get('glosses', {}).get(src_lang)), None)
 
 
 def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
-    '''
-    '''
+    """
+    Processes lexeme and sense data, handling glosses and audio.
+    This function has been refactored to be more efficient by using a dictionary
+    for faster audio lookups and streamlining the main processing loop.
+    """
     processed_data = {}
-    media = None
-    if image is not None:
-        media = get_image_url(image[0]['mainsnak']['datavalue']['value'])
+    media = get_image_url(image[0]['mainsnak']['datavalue']['value']) if image else None
 
-    lemma_value = lexeme_data['lemmas'][src_lang]['value'] if src_lang in lexeme_data['lemmas'] else None
+    lemma_value = lexeme_data['lemmas'].get(src_lang, {}).get('value')
     if not lemma_value:
-        language_name = [name for code, name, _ in getLanguages() if code == src_lang]
-        return {
-            'error': f'Word not found in source language: {language_name[0]}',
-            'status_code': 404
-        }
+        language_name = next((name for code, name, _ in getLanguages() if code == src_lang), "Unknown Language")
+        return {'error': f'Word not found in source language: {language_name}', 'status_code': 404}
 
-    matched_sense_id = get_matching_sense_id(src_lang,
-                                             lexeme_data.get('senses', []))
-    matched_form_id = get_matching_form_id(lemma_value, src_lang,
-                                           lexeme_data.get('forms', []))
-    lexeme = {
+    matched_sense_id = get_matching_sense_id(src_lang, lexeme_data.get('senses', []))
+    matched_form_id = get_matching_form_id(lemma_value, src_lang, lexeme_data.get('forms', []))
+
+    processed_data['lexeme'] = {
         'id': lexeme_data['id'],
         'lexicalCategoryId': lexeme_data['lexicalCategory'],
         'lexicalCategoryLabel': get_item_label(lexeme_data['lexicalCategory']),
         'image': media
     }
 
-    processed_data['lexeme'] = lexeme
     processed_data['glosses'] = []
-
-    # Add the lexeme itself as the first item in glosses
     processed_data['glosses'].append({
         'senseId': matched_sense_id,
         'gloss': {
             'language': src_lang,
-            'value': lexeme_data.get('lemmas', {}).get(src_lang, {}).get('value', None),
+            'value': lemma_value,
             'audio': None,
             'formId': matched_form_id
         }
     })
 
-
-    # Add other entries for senses if there is a match
-    for lang in [lang_1, lang_2]:
-        for sense in lexeme_data.get('senses', []):
-            sense_base = {}
-            sense_gloss = sense.get('glosses', None)
-            if sense_gloss and lang in sense_gloss:
-                temp_sense_gloss = sense_gloss.copy()
-                sense_base['senseId'] = sense['id']
-                sense_base['gloss'] = temp_sense_gloss[lang]
-                processed_data['glosses'].append(sense_base)
-                break
-            else:
-                processed_data['glosses'].append({
-                    'senseId': sense['id'],
-                    'gloss': get_default_gloss(lang)
-                })
-                break
-
-
-    forms_and_audio = []
-    for form in lexeme_data['forms']:
-        claims = form.get('claims', None)
+    # Use a dictionary for fast form-to-audio lookups
+    form_audio_map = {}
+    for form in lexeme_data.get('forms', []):
+        claims = form.get('claims')
         if claims and 'P443' in claims:
             for audio_claim in claims['P443']:
-                value = audio_claim['mainsnak']['datavalue']['value']
-                if value is not None and value in audio_claim['mainsnak']['datavalue']['value']:
-                    audio = audio_claim['mainsnak']['datavalue']['value']
-                    url = get_wikimedia_commons_url(audio, commons_url)
-                    forms_and_audio.append({
-                        'formId': form['id'],
-                        'audio': url
-                    })
-
-    for sense_gloss in processed_data['glosses']:
-        for form_audio_dict in forms_and_audio:
-            value = sense_gloss['gloss']['value']
-            if value is not None and form_audio_dict['audio'] is not None and \
-                check_exact_match_in_url(str(value),
-                                form_audio_dict['audio']):
-                sense_gloss['gloss']['audio'] = form_audio_dict['audio']
-                sense_gloss['gloss']['formId'] = form_audio_dict['formId']
+                audio_value = audio_claim['mainsnak']['datavalue']['value']
+                # The assumption is that one form has one audio file.
+                form_audio_map[form['id']] = get_wikimedia_commons_url(audio_value, commons_url)
                 break
-            else:
-                sense_gloss['gloss']['audio'] = None
-                sense_gloss['gloss']['formId'] = None
+
+    # Add other entries for senses
+    senses = lexeme_data.get('senses', [])
+    for lang in [lang_1, lang_2]:
+        found_gloss = False
+        for sense in senses:
+            sense_gloss = sense.get('glosses', {}).get(lang)
+            if sense_gloss:
+                processed_data['glosses'].append({
+                    'senseId': sense['id'],
+                    'gloss': sense_gloss
+                })
+                found_gloss = True
+                break
+        if not found_gloss and senses:
+            # If no gloss found for the language, add a default for the first sense
+            processed_data['glosses'].append({
+                'senseId': senses[0]['id'],
+                'gloss': get_default_gloss(lang)
+            })
+            
+    # Add audio to the glosses based on the pre-built map
+    for sense_gloss in processed_data['glosses']:
+        form_id = sense_gloss['gloss'].get('formId')
+        audio_url = form_audio_map.get(form_id)
+        if audio_url:
+            sense_gloss['gloss']['audio'] = audio_url
 
     return processed_data
+
+
+def process_lexeme_form_data(search_term, data, src_lang, lang_1, lang_2):
+    """
+    Processes lexeme form data to find audio URLs.
+    Refactored to find the matching form once and then process its claims,
+    avoiding redundant loops and using a more robust matching method.
+    """
+    processed_data = {}
+    
+    # Find the specific form that matches the search term in the source language
+    matching_form = next((form for form in data 
+                          if form.get('representations', {}).get(src_lang, {}).get('value') == search_term), None)
+
+    if not matching_form:
+        return []
+
+    form_id = matching_form['id']
+    form_claims = matching_form.get('claims', {})
+    form_audio_list = []
+
+    # Get a list of all potential audio file names from the claims
+    potential_audios = [audio_claim['mainsnak']['datavalue']['value'] 
+                        for audio_claim in form_claims.get('P443', [])]
+
+    # Process each language
+    for lang in [src_lang, lang_1, lang_2]:
+        audio_object = {'language': lang, 'audio': None}
+        reps_value = matching_form.get('representations', {}).get(lang, {}).get('value')
+        
+        if reps_value:
+            # Look for an exact match for the language-prefixed filename
+            audio_filename = f"{lang}-{reps_value}"
+            best_match = next((audio for audio in potential_audios if audio_filename in audio), None)
+
+            if best_match:
+                audio_object['audio'] = get_wikimedia_commons_url(best_match, commons_url)
+        
+        form_audio_list.append(audio_object)
+    
+    processed_data[form_id] = form_audio_list
+    return [processed_data]
 
 
 def get_lexeme_sense_glosses(lexeme_id, src_lang, lang_1, lang_2):
@@ -331,40 +329,6 @@ def get_lexeme_sense_glosses(lexeme_id, src_lang, lang_1, lang_2):
     glosses_data = process_lexeme_sense_data(lexeme_senses_data['entities'][lexeme_id],
                                              src_lang, lang_1, lang_2, image)
     return glosses_data
-
-
-def process_lexeme_form_data(search_term, data, src_lang, lang_1, lang_2):
-    processed_data = {}
-
-    for form in data:
-        form_audio_list = []
-        for lang in [src_lang, lang_1, lang_2]:
-            reps_match = {lang: {'language': lang, 'value': search_term}}
-            audio_object = {}
-            audio_object['language'] = lang
-            if form['representations'] == reps_match and form['claims']:
- 
-                form_claims_audios = form['claims']['P443']
-
-                potential_match_audio = []
-                for audio_claim in form_claims_audios:
-                    # TODO: Find a way to best match serach term to audio
-                    value = audio_claim['mainsnak']['datavalue']['value']
-                    potential_match_audio.append(value)
-
-                best_match_audio = get_close_matches(lang + '-' + search_term,
-                                                     potential_match_audio)
-
-                # audio_object['audio'] = 'File:' + best_match_audio[0] if \
-                #     len(best_match_audio) > 1 else potential_match_audio[0]
-                audio_object['audio'] = 'File:' + best_match_audio[0]
-                form_audio_list.append(audio_object)
-            else:
-                audio_object['audio'] = None
-                form_audio_list.append(audio_object)
-  
-        processed_data[form['id']] = form_audio_list
-    return [processed_data]
 
 
 def get_lexeme_forms_audio(search_term, lexeme_id, src_lang, lang_1, lang_2):
@@ -465,14 +429,6 @@ def add_gloss_to_lexeme_sense(lexeme_id, sense_id, gloss_language,
 
     This function correctly implements the logic for editing a lexeme.
     Adding a gloss is an *edit* to an existing lexeme, not the creation of a new one.
-
-    Parameters:
-        lexeme_id (str): The ID of the lexeme to modify (e.g., "L123").
-        sense_id (str): The ID of the sense to add the gloss to (e.g., "L123-S1").
-        gloss_language (str): The language code for the new gloss (e.g., "fr").
-        gloss_value (str): The text of the new gloss.
-        username (str): The username of the editor for the summary.
-        auth_obj (dict): The authentication object with access_token and access_secret.
     """
     # We get the current lexeme
     # Then get its avoid edit conflicts
@@ -673,21 +629,12 @@ def validate_translation_request_body(request_body, schema):
 def check_exact_match_in_url(word, url):
     """
     Checks if a word is an exact match for the filename (minus the extension) in a URL.
-
-    Args:
-        word (str): The word to search for.
-        url (str): The URL string to check.
-
-    Returns:
-        bool: True if the word is an exact match for the filename, False otherwise.
     """
     decoded_url = urllib.parse.unquote(url)
     match = re.search(r'/([^/]+)\.[^/.]+$', decoded_url)
-
     if match:
         filename = match.group(1)
         filename_stripped = re.sub(r'^[a-zA-Z]{2,}-\w{2,}-|^[a-zA-Z]{2}-', '', filename)
         if re.fullmatch(word, filename_stripped, re.IGNORECASE):
             return True
-
     return False
