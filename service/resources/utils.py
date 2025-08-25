@@ -1,8 +1,7 @@
 import requests
 from requests_oauthlib import OAuth1
 
-
-def make_api_request(url, PARAMS):
+def make_api_request(url, PARAMS, headers):
     """ Makes request to an end point to get data
 
         Parameters:
@@ -15,11 +14,11 @@ def make_api_request(url, PARAMS):
 
     try:
         S = requests.Session()
-        r = S.get(url=url, params=PARAMS)
+        r = S.get(url=url, params=PARAMS, headers=headers)
         data = r.json()
     except Exception as e:
         return {
-            'info': str(e),
+            'error': str(e),
             'status_code': 503
         }
 
@@ -63,3 +62,9 @@ def generate_csrf_token(url, app_key, app_secret, user_key, user_secret):
             'info': f'Unable to get csrf token check user edit tokens {str(e)}',
             'status_code': 503
         }
+
+
+def get_user_agent():
+    return {
+        'User-Agent': 'AGPB/3.0'
+    }

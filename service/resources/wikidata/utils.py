@@ -14,7 +14,7 @@ from jsonschema import validate, ValidationError
 from service import db
 from service.models import ContributionModel
 from service.utils.languages import getLanguages
-from service.resources.utils import make_api_request
+from service.resources.utils import make_api_request, get_user_agent
 from service.resources.commons.utils import upload_file
 from service.resources.utils import generate_csrf_token
 from SPARQLWrapper import SPARQLWrapper, JSON
@@ -102,7 +102,7 @@ def lexemes_search(search, src_lang, ismatch):
         'limit': 15
     }
 
-    wd_search_results = make_api_request(base_url, PARAMS)
+    wd_search_results = make_api_request(base_url, PARAMS, get_user_agent())
 
     if 'status_code' in list(wd_search_results.keys()):
         return wd_search_results
@@ -177,10 +177,8 @@ def get_wikimedia_commons_url(file_name, api_url):
         "iiprop": "url",
         "format": "json"
     }
-    custom_headers = {
-        'User-Agent': 'AGPB/3.0'
-    }
-    response = requests.get(api_url, params=params, headers=custom_headers)
+
+    response = requests.get(api_url, params=params, headers=get_user_agent())
     data = response.json()
 
     pages = data.get("query", {}).get("pages", {})
@@ -339,7 +337,7 @@ def get_lexeme_sense_glosses(lexeme_id, src_lang, lang_1, lang_2):
         'ids': lexeme_id
     }
 
-    lexeme_senses_data = make_api_request(base_url, PARAMS)
+    lexeme_senses_data = make_api_request(base_url, PARAMS, get_user_agent())
 
     if 'status_code' in list(lexeme_senses_data.keys()):
         return lexeme_senses_data
@@ -363,7 +361,7 @@ def get_lexeme_forms_audio(search_term, lexeme_id, src_lang, lang_1, lang_2):
         'ids': lexeme_id
     }
 
-    lexeme_data = make_api_request(base_url, PARAMS)
+    lexeme_data = make_api_request(base_url, PARAMS, get_user_agent())
 
     if 'status_code' in list(lexeme_data.keys()):
         return lexeme_data
@@ -671,7 +669,7 @@ def get_lexeme_translations(lexeme_id, src_lang, lang_1, lang_2):
         'languages': src_lang,
         'ids': lexeme_id
     }
-    result = make_api_request(base_url, PARAMS)
+    result = make_api_request(base_url, PARAMS, get_user_agent())
     if 'status_code' in list(result.keys()):
         return result
 
@@ -697,7 +695,7 @@ def get_multiple_lexemes_data(lexemes_ids, src_lang, lang_1, lang_2):
         'languages': ','.join([src_lang, lang_1, lang_2]),
         'ids': '|'.join([id.split('-')[0] for id in lexemes_ids])
     }
-    result = make_api_request(base_url, PARAMS)
+    result = make_api_request(base_url, PARAMS, get_user_agent())
 
     final_results = []
     for lang in [src_lang, lang_1, lang_2]:

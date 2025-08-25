@@ -2,7 +2,7 @@ import io
 import requests
 from service.resources.wikidata.utils import make_api_request
 from common import commons_url, consumer_key, consumer_secret
-from service.resources.utils import generate_csrf_token
+from service.resources.utils import generate_csrf_token, get_user_agent
 
 
 def get_media_url_by_title(file_titles):
@@ -13,7 +13,7 @@ def get_media_url_by_title(file_titles):
         "iiprop": "url",
         "format": "json"
     }
-    media_data = make_api_request(commons_url, PARAMS)
+    media_data = make_api_request(commons_url, PARAMS, get_user_agent())
 
     if 'status_code' in list(media_data.keys()):
         return media_data
