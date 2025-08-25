@@ -13,7 +13,8 @@ from service.resources.wikidata.lexeme import (LexemesGet, LexemesTranslate,
                                                LexemeGlossesGet,
                                                LexemeFormsAudiosLackGet,
                                                LexemeAudioAdd,
-                                               LexemesMissingAudioGet)
+                                               LexemesMissingAudioGet,
+                                               LexemeTranslateGet)
 
 from service.resources.commons.commons import CommonsFIleUrLPost
 from service.resources.auth.auth import AuthGet, AuthCallBackPost, AuthLogout
@@ -41,10 +42,11 @@ api.add_resource(LanguageGet, '/languages/<string:lang_code>')
 
 api.add_resource(LexemesGet, '/lexemes')
 api.add_resource(LexemesTranslate, '/lexemes/translations/add')
-api.add_resource(LexemeGlossesGet, '/lexemes/<string:id>/translations')
+api.add_resource(LexemeGlossesGet, '/lexemes/<string:id>/descriptions')
 api.add_resource(LexemeFormsAudiosLackGet, '/lexeme/language/forms')
 api.add_resource(LexemeAudioAdd, '/lexeme/audio/add')
 api.add_resource(LexemesMissingAudioGet, '/lexemes/missing/audio')
+api.add_resource(LexemeTranslateGet, '/lexemes/<string:id>/translations')
 
 api.add_resource(CommonsFIleUrLPost, '/file/url/<string:titles>')
 

@@ -8,7 +8,9 @@ from service.require_token import token_required
 from .utils import (lexemes_search, get_lexeme_sense_glosses,
                     translate_new_lexeme, get_lexemes_lacking_audio,
                     add_audio_to_lexeme, get_auth_object,
-                    add_gloss_to_lexeme_sense, validate_translation_request_body)
+                    add_gloss_to_lexeme_sense,
+                    validate_translation_request_body,
+                    get_lexeme_translations)
 from common import consumer_key, consumer_secret, prod_fe_url
 
 
@@ -356,3 +358,18 @@ class LexemesMissingAudioGet(Resource):
             abort(results['status_code'], results)
 
         return results, 200
+
+
+class LexemeTranslateGet(Resource):
+    def post(self, id):
+        args = lexeme_args.parse_args()
+        if args['id'] is None or args['src_lang'] is None:
+            abort(400, f'Please provide required parameters {str(list(args.keys()))}')
+
+        lexeme_translations = get_lexeme_translations(args['id'],
+                                                      args['src_lang'], args['lang_1'],
+                                                      args['lang_2'])
+        if type(lexeme_translations) is not list:
+            abort(lexeme_translations['status_code'], lexeme_translations)
+
+        return lexeme_translations, 200

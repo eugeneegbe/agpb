@@ -638,3 +638,85 @@ def check_exact_match_in_url(word, url):
         if re.fullmatch(word, filename_stripped, re.IGNORECASE):
             return True
     return False
+
+
+def get_lexeme_translations(lexeme_id, src_lang, lang_1, lang_2):
+    PARAMS = {
+        'action': 'wbgetentities',
+        'format': 'json',
+        'languages': src_lang,
+        'ids': lexeme_id
+    }
+    result = make_api_request(base_url, PARAMS)
+    if 'status_code' in list(result.keys()):
+        return result
+
+    lexeme_data = result.get('entities', {}).get(lexeme_id)
+    marching_sense =  next((sense for sense in lexeme_data.get('senses', [])
+                 if sense.get('glosses', {}).get(src_lang)), None)
+    claims = marching_sense.get('claims', {}) if marching_sense else {}
+
+    ids = None
+    if 'P5972' in claims:
+        ids = [entry['mainsnak']['datavalue']['value']['id'] for \
+               entry in claims['P5972']]
+
+    translation_data = get_multiple_lexemes_data(ids, src_lang,
+                                                 lang_1, lang_2)
+    return translation_data
+
+
+def get_multiple_lexemes_data(lexemes_ids, src_lang, lang_1, lang_2):
+    PARAMS = {
+        'action': 'wbgetentities',
+        'format': 'json',
+        'languages': ','.join([src_lang, lang_1, lang_2]),
+        'ids': '|'.join([id.split('-')[0] for id in lexemes_ids])
+    }
+    result = make_api_request(base_url, PARAMS)
+
+    final_results = []
+    for lang in [src_lang, lang_1, lang_2]:
+        match_struc = {}
+        for id in lexemes_ids:
+            lexeme_id = id.split('-')[0]
+            lemmas = result['entities'][lexeme_id]['lemmas']
+            if lang in lemmas.keys():
+                match_struc['id'] = lexeme_id
+                match_struc['sense_id'] = id
+                match_struc['language'] = lang
+                match_struc['value'] = lemmas[lang]['value']
+                final_results.append(match_struc)
+                break
+            else:
+                final_results.append({
+                    'id': None,
+                    'sense_id': None,
+                    'language': lang,
+                    'value': None
+                })
+
+    return remove_duplicates_with_priority(final_results)
+
+
+def remove_duplicates_with_priority(data):
+    """
+    Removes duplicate dictionaries from a list based on 'language',
+    prioritizing entries where 'value' is not None.
+
+    Args:
+        data (list): A list of dictionaries with 'id', 'language', and 'value' keys.
+
+    Returns:
+        list: A new list with duplicate entries removed.
+    """
+    unique_entries = {}
+    for item in data:
+        key = (item['language'])
+
+        # Add the item if the key is new or if the current item has a value
+        # and the stored one does not.
+        if key not in unique_entries or (item['value'] is not None and unique_entries[key]['value'] is None):
+            unique_entries[key] = item
+
+    return list(unique_entries.values())

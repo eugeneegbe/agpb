@@ -642,6 +642,61 @@
         }
       }
     },
+    "/lexemes/{id}/descriptions": {
+      "post": {
+        "tags": [
+          "lexeme"
+        ],
+        "summary": "Retrieve specific lexeme descriptions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "example": "L3625"
+                  },
+                  "src_lang": {
+                    "type": "string",
+                    "example": "en"
+                  },
+                  "lang_1": {
+                    "type": "string",
+                    "example": "de"
+                  },
+                  "lang_2": {
+                    "type": "string",
+                    "example": "fr"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/descriptions"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "descriptions not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/lexemes/{id}/translations": {
       "post": {
         "tags": [
@@ -1129,7 +1184,7 @@
           }
         }
       },
-      "translations": {
+      "descriptions": {
         "type": "array",
         "items": {
           "type": "object",
@@ -1150,6 +1205,77 @@
                   "lexicalCategoryLabel": {
                     "type": "string",
                     "example": "noun"
+                  }
+                }
+              }
+            },
+            "translations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "translation": {
+                    "type": "object",
+                    "properties": {
+                      "language": {
+                        "type": "string",
+                        "example": "fr"
+                      },
+                      "value": {
+                        "type": "string",
+                        "example": "m\u00e8re"
+                      },
+                      "audio": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "example": null
+                      },
+                      "formId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "example": null
+                      }
+                    }
+                  },
+                  "senseId": {
+                    "type": "string",
+                    "example": "L3625-S1"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "translations": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "lexeme": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "example": "L3625"
+                  },
+                  "sense_id": {
+                    "type": "string",
+                    "example": "L3625-S1"
+                  },
+                  "language": {
+                    "type": "string",
+                    "example": "en"
+                  },
+                  "value": {
+                    "type": "string",
+                    "example": "mother"
                   }
                 }
               }
