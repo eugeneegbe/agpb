@@ -113,10 +113,8 @@ def lexemes_search(search, src_lang, ismatch):
     search_result_data = process_search_results(wd_search_results['search'],
                                                 search, src_lang, bool(ismatch))
 
-
-    language_label = get_language_label(getLanguages(), src_lang).lower()
     data = [item for item in search_result_data \
-            if language_label == item["description"].split(',')[0].lower()]
+            if src_lang == item["language"]]
 
     return data
 
