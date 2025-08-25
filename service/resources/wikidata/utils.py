@@ -114,11 +114,11 @@ def lexemes_search(search, src_lang, ismatch):
                                                 search, src_lang, bool(ismatch))
 
 
-    language_label = get_language_label(getLanguages(), src_lang)
-    search_result_data = [item for item in search_result_data \
-                          if language_label in item["description"]]
+    language_label = get_language_label(getLanguages(), src_lang).lower()
+    data = [item for item in search_result_data \
+            if language_label == item["description"].split(',')[0].lower()]
 
-    return search_result_data
+    return data
 
 
 def get_language_label(languages, code):
