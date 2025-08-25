@@ -113,7 +113,30 @@ def lexemes_search(search, src_lang, ismatch):
     search_result_data = process_search_results(wd_search_results['search'],
                                                 search, src_lang, bool(ismatch))
 
+
+    language_label = get_language_label(getLanguages(), src_lang)
+    search_result_data = [item for item in search_result_data \
+                          if language_label in item["description"]]
+
     return search_result_data
+
+
+def get_language_label(languages, code):
+    """
+    Finds the language label from a list of tuples based on a given language code.
+
+    Args:
+        languages (list of tuples): A list of tuples, where each tuple contains
+                                     (code, label, ID).
+        code (str): The language code to match.
+
+    Returns:
+        str or None: The language label if a match is found, otherwise None.
+    """
+    for lang_code, label, _ in languages:
+        if lang_code == code:
+            return label
+    return None
 
 
 def get_item_label(id):
@@ -336,6 +359,7 @@ def get_lexeme_forms_audio(search_term, lexeme_id, src_lang, lang_1, lang_2):
         'action': 'wbgetentities',
         'format': 'json',
         'languages': src_lang,
+        'strictlanguage': True,
         'ids': lexeme_id
     }
 
