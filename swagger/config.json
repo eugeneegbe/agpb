@@ -553,7 +553,7 @@
         }
       }
     },
-    "/lexemes/translations/add": {
+    "/lexemes/description/add": {
       "post": {
         "tags": [
           "lexeme"
@@ -615,6 +615,95 @@
                       "lexeme_id": "L3625",
                       "is_new": true,
                       "lexeme_sense_id": "L3625-S1"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Lexeme created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/lexemes_translate"
+                }
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Unauthorized"
+        },
+        "403": {
+          "description": "Forbidden"
+        }
+      }
+    },
+    "/lexemes/translation/add": {
+      "post": {
+        "tags": [
+          "lexeme"
+        ],
+        "summary": "Add a new translation statement to A lexeme",
+        "parameters": [
+          {
+            "name": "x-access-tokens",
+            "in": "header",
+            "required": true,
+            "description": "User access token",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "lexeme_id": {
+                      "type": "string",
+                      "example": "L3625"
+                    },
+                    "translation_language": {
+                      "type": "string",
+                      "example": "en"
+                    },
+                    "translation_sense_id": {
+                      "type": "string",
+                      "example": "L1144322-S1"
+                    },
+                    "is_new": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "value": {
+                      "type": "string",
+                      "example": "Mutter"
+                    },
+                    "categoryId": {
+                      "type": "string",
+                      "example": "Q1084"
+                    }
+                  }
+                }
+              },
+              "examples": {
+                "An example array of objects": {
+                  "value": [
+                    {
+                      "lexeme_id": "L3625",
+                      "translation_language": "Q1860",
+                      "translation_sense_id": "L3625-S1",
+                      "is_new": true,
+                      "value": "Mutter",
+                      "categoryId": "Q1084"
                     }
                   ]
                 }

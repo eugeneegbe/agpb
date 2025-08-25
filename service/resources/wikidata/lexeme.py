@@ -10,7 +10,8 @@ from .utils import (lexemes_search, get_lexeme_sense_glosses,
                     add_audio_to_lexeme, get_auth_object,
                     add_gloss_to_lexeme_sense,
                     validate_translation_request_body,
-                    get_lexeme_translations)
+                    get_lexeme_translations,
+                    add_translation_to_lexeme)
 from common import consumer_key, consumer_secret, prod_fe_url
 
 
@@ -100,6 +101,42 @@ add_audio_schema = {
         "required": ["lang_wdqid", "lang_label", "formid", "file_content"]
     }
 }
+
+add_translation_schema = {
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "base_lexeme": {
+                "type": "string",
+                "example": "L3625-S1"
+            },
+            "translation_language": {
+                "type": "string",
+                "example": "de"
+            },
+            "translation_sense_id": {
+                "type": "string",
+                "example": "L34041-S1"
+            },
+            "is_new": {
+                "type": "boolean",
+                "example": True
+            },
+            "value": {
+                "type": "string",
+                "example": "Mutter"
+            },
+            "categoryId": {
+                "type": "string",
+                "example": "Q1084"
+            }
+        },
+        "required": ["base_lexeme", "translation_language", "is_new",
+                     "translation_sense_id", "value", "categoryId"]
+    }
+}
+
 
 form_audio_args.add_argument('search_term', type=str, help="Provide a search term")
 form_audio_args.add_argument('id', type=str, help="Lexeme ID is required")
@@ -373,3 +410,43 @@ class LexemeTranslateGet(Resource):
             abort(lexeme_translations['status_code'], lexeme_translations)
 
         return lexeme_translations, 200
+
+
+class LexemeTranslateAdd(Resource):
+    # @token_required
+    @marshal_with(LexemeAudioAddFields)
+    def post(self):
+        request_body = request.get_json()
+        print(request_body)
+        if not request_body:
+            abort(400, 'Request body is empty')
+
+        if not validate_translation_request_body(request_body, add_translation_schema):
+            abort(400, 'Invalid request body')
+
+        # get request header token_required info
+        token = request.headers.get('x-access-tokens')
+
+        try:
+            decoded_token = jwt.decode(token, consumer_secret, algorithms=["HS256"])
+            if 'access_token' not in decoded_token:
+                return {
+                    'message': 'Access token is missing in the decoded token'
+                }, 400
+            
+        except Exception as e:
+            abort(401, 'User may not be authenticated')
+
+        auth_obj = get_auth_object(consumer_key, consumer_secret, decoded_token)
+
+        # Fetch the user whose temp token is the same as the decoded token
+        user = UserModel.query.filter_by(temp_token=decoded_token['token']).first()
+        if not user:
+            abort(401, 'User not found')
+
+        results = add_translation_to_lexeme(user.username, auth_obj, request_body)
+
+        if 'error' in results:
+            abort(503, results)
+
+        return [], 200

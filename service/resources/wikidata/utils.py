@@ -103,17 +103,16 @@ def lexemes_search(search, src_lang, ismatch):
     }
 
     wd_search_results = make_api_request(base_url, PARAMS, get_user_agent())
-
     if 'status_code' in list(wd_search_results.keys()):
         return wd_search_results
 
     if 'search' not in wd_search_results:
         return {'error': 'No search results found', 'status_code': 404}
- 
+    
     search_result_data = process_search_results(wd_search_results['search'],
                                                 search, src_lang, bool(ismatch))
 
-
+    
     language_label = get_language_label(getLanguages(), src_lang).lower()
     data = [item for item in search_result_data \
             if language_label == item["description"].split()[0].lower().strip('(),')]
@@ -319,7 +318,7 @@ def process_lexeme_form_data(search_term, data, src_lang, lang_1, lang_2):
 
             if best_match:
                 audio_object['audio'] = get_wikimedia_commons_url(best_match, commons_url)
-        
+
         form_audio_list.append(audio_object)
     
     processed_data[form_id] = form_audio_list
@@ -507,7 +506,6 @@ def add_gloss_to_lexeme_sense(lexeme_id, sense_id, gloss_language,
         'action': 'wbeditentity',
         'id': lexeme_id,
         'data': json.dumps(edit_payload),
-        'summary': f"Adding '{gloss_language}' gloss for sense {sense_id} via AGPB-v{app_version}",
         'token': csrf_token,
         'baserevid': base_revid,
         'format': 'json'
@@ -630,6 +628,100 @@ def add_audio_to_lexeme(username, auth_object, audio_data):
 
     return {'results': results}
 
+
+def add_translation_to_lexeme(username, auth_object, data):
+    # data = [{
+    #     'categoryId': 'Q1084',
+    #     'is_new': True,
+    #     'base_lexeme': 'L3625-S1',
+    #     'translation_language': 'Q1860',
+    #     'translation_sense_id': 'L3625-S1',
+    #     'value': 'Mutter'}]
+
+    csrf_token, api_auth_token = generate_csrf_token(base_url,
+                                                     consumer_key,
+                                                     consumer_secret,
+                                                     auth_object['access_token'],
+                                                     auth_object['access_secret'])
+    # Lexeme does not yet exist
+    if data['is_new']:
+        return {
+            'error': 'Adding non-existing lexemes is not supported yet',
+            'status_code': 401
+        }
+
+    params = {}
+    params['format'] = 'json'
+    params['token'] = csrf_token
+    params['action'] = 'wbcreateclaim'
+    params['entity'] = data['lexeme_id']
+    params['property'] = 'P5972'
+    params['snaktype'] = 'value'
+    params['value'] = data['translation_sense_id']
+
+    try:
+        claim_response = requests.post(base_url, data=params, auth=api_auth_token)
+    except Exception as e:
+        return {
+            'error': 'Upload failed' + str(e)
+        }
+
+    if 'error' in claim_response.json().keys():
+        return {
+            'error': str(claim_response.json()['error']['code']
+                        .capitalize() + ': ' + claim_response.json()['error']['info']
+                        .capitalize())
+        }
+
+    claim_result = claim_response.json()
+
+    # get language item here from lang_code
+    qualifier_value = data['translation_language']
+    qualifier_params = {}
+    qualifier_params['claim'] = claim_result['claim']['id']
+    qualifier_params['action'] = 'wbsetqualifier'
+    qualifier_params['property'] = 'P407'
+    qualifier_params['snaktype'] = 'value'
+    qualifier_params['value'] = json.dumps({'entity-type': 'item', 'id': qualifier_value})
+    qualifier_params['format'] = 'json'
+    qualifier_params['token'] = csrf_token
+
+    results = []
+    try:
+        qual_response = requests.post(base_url, data=qualifier_params,
+                                    auth=api_auth_token)
+        qualifier_params = qual_response.json()
+        
+        if qual_response.status_code != 200:
+            return {
+                'error': 'Translation could not be added',
+                'status_code': 401
+            }
+    
+        revision_id = qualifier_params.get('pageinfo').get('lastrevid', None)
+        results.append({
+            'lexeme_id': data['formid'].split('-')[0],
+            'revisionid': revision_id
+        })
+
+        # Record contribution on tool
+        contribution = ContributionModel(wd_item=data['lexeme_id'],
+                                            username=username,
+                                            lang_code=data['translation_language'],
+                                            edit_type='audio',
+                                            data=data['lexeme_id'] + '- P5927 -' + \
+                                                 data['translation_sense_id'] ,
+                                            date=datetime.datetime.now())
+        db.session.add(contribution)
+        db.session.commit()
+
+    except Exception as e:
+        db.session.rollback()
+        return {'error': 'Qualifier could not be added: ' + str(e)}
+
+    return {'results': results}
+
+
 def get_auth_object(consumer_key, consumer_secret, decoded_token):
     return {
         "consumer_key": consumer_key,
@@ -674,9 +766,9 @@ def get_lexeme_translations(lexeme_id, src_lang, lang_1, lang_2):
         return result
 
     lexeme_data = result.get('entities', {}).get(lexeme_id)
-    marching_sense =  next((sense for sense in lexeme_data.get('senses', [])
+    matching_sense =  next((sense for sense in lexeme_data.get('senses', [])
                  if sense.get('glosses', {}).get(src_lang)), None)
-    claims = marching_sense.get('claims', {}) if marching_sense else {}
+    claims = matching_sense.get('claims', {}) if matching_sense else {}
 
     ids = None
     if 'P5972' in claims:
@@ -684,11 +776,13 @@ def get_lexeme_translations(lexeme_id, src_lang, lang_1, lang_2):
                entry in claims['P5972']]
 
     translation_data = get_multiple_lexemes_data(ids, src_lang,
-                                                 lang_1, lang_2)
+                                                 lang_1, lang_2,
+                                                 matching_sense['id'])
     return translation_data
 
 
-def get_multiple_lexemes_data(lexemes_ids, src_lang, lang_1, lang_2):
+def get_multiple_lexemes_data(lexemes_ids, src_lang,
+                              lang_1, lang_2, matching_sense):
     PARAMS = {
         'action': 'wbgetentities',
         'format': 'json',
@@ -704,17 +798,19 @@ def get_multiple_lexemes_data(lexemes_ids, src_lang, lang_1, lang_2):
             lexeme_id = id.split('-')[0]
             lemmas = result['entities'][lexeme_id]['lemmas']
             if lang in lemmas.keys():
-                match_struc['id'] = lexeme_id
-                match_struc['sense_id'] = id
-                match_struc['language'] = lang
+                match_struc['base_lexeme'] = matching_sense
+                match_struc['trans_lexeme_id'] = lexeme_id
+                match_struc['trans_sense_id'] = id
+                match_struc['trans_language'] = lang
                 match_struc['value'] = lemmas[lang]['value']
                 final_results.append(match_struc)
                 break
             else:
                 final_results.append({
-                    'id': None,
-                    'sense_id': None,
-                    'language': lang,
+                    'base_lexeme': matching_sense,
+                    'lexeme_id': None,
+                    'trans_sense_id': None,
+                    'trans_language': lang,
                     'value': None
                 })
 
@@ -734,7 +830,7 @@ def remove_duplicates_with_priority(data):
     """
     unique_entries = {}
     for item in data:
-        key = (item['language'])
+        key = (item['trans_language'])
 
         # Add the item if the key is new or if the current item has a value
         # and the stored one does not.
