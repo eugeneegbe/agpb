@@ -51,7 +51,7 @@ def getLanguages():
         ('fa', 'Persian', 'Q9168'),
         ('fj', 'Fijian', 'Q33228'),
         ('fi', 'Finnish', 'Q1412'),
-        ('fr', 'French', 'Q150'),
+        ('fr', 'Français', 'Q150'),
         ('fy', 'Western Frisian', 'Q27175'),
         ('ff', 'Fulah', 'Q33466'),
         ('gd', 'Gaelic; Scottish Gaelic', 'Q9310'),
