@@ -285,7 +285,7 @@ class LexemeGlossesGet(Resource):
             args['src_lang'] is None:
             keys = ', '.join(list(args.keys()))
             abort(400, f'Please provide required parameters: {keys}')
-
+        
         lexeme_glosses = get_lexeme_sense_glosses(args['id'], args['src_lang'],
                                                   args['lang_1'], args['lang_2'])
 

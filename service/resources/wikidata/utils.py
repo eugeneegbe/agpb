@@ -140,9 +140,12 @@ def get_language_label(languages, code):
 
 def get_item_label(id):
     client = Client()
-    entity = client.get(id, load=True)
-    if entity.label:
-        return entity.label
+    try:
+        entity = client.get(id, load=True)
+        if entity.label:
+            return entity.label
+    except Exception as e:
+        print(str(e))
     return None
 
 
