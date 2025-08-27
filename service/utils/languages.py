@@ -36,6 +36,7 @@ def getLanguages():
         ('cr', 'ᓀᐦᐃᔭᐍᐏᐣ (Nēhiyawēwin)', 'Q33370'),
         ('cy', 'Cymraeg', 'Q9309'),
         ('da', 'dansk', 'Q9035'),
+        ('dag', 'Dagbani', 'Q32238'),
         ('de', 'Deutsch', 'Q188'),
         ('nl', 'Nederlands', 'Q7411'),
         ('dz', 'རྫོང་ཁ', 'Q33227'),
