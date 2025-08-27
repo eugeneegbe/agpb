@@ -22,34 +22,43 @@ from SPARQLWrapper import SPARQLWrapper, JSON
 
 def get_lexemes_lacking_audio(lang_qid, lang_code, page_size=15, page=1):
     offset = (page - 1) * page_size
+
+    
     query = f"""
-    SELECT ?l ?sense ?lemma ?category ?categoryLabel ?form WHERE {{
-        ?l   ontolex:sense ?sense;
-            dct:language wd:{lang_qid};
-            wikibase:lemma ?lemma;
+    SELECT DISTINCT ?l ?sense ?form ?formRepresentation ?category ?categoryLabel WHERE {{
+    ?l dct:language wd:{lang_qid};
             ontolex:lexicalForm ?form;
+            ontolex:sense ?sense;
             wikibase:lexicalCategory ?category.
-        ?category rdfs:label ?categoryLabel.
-        FILTER(lang(?categoryLabel) = "{lang_code}")
-        FILTER(NOT EXISTS {{ ?form wikibase:P443 ?audioFile. }})
+
+    ?form ontolex:representation ?formRepresentation.
+
+    MINUS {{
+        ?form wdt:P443 ?audioFile.
     }}
-    ORDER BY ?l
+
+    SERVICE wikibase:label {{
+        bd:serviceParam wikibase:language "{lang_code}".
+        ?category rdfs:label ?categoryLabel.
+    }}
+    }}
     LIMIT {page_size}
     OFFSET {offset}
     """
-
+    
     user_agent = "AGPB/%s.%s" % (sys.version_info[0], sys.version_info[1])
     sparql = SPARQLWrapper(sparql_endpoint_url, agent=user_agent)
     sparql.setQuery(query)
     sparql.setReturnFormat(JSON)
     result = sparql.query().convert()
     final_results = []
+    # TODO: Change key:lemma to form_rep
     if 'results' in result and 'bindings' in result['results']:
         for entry in result['results']['bindings']:
             final_results.append({
                 "lexeme_id": entry['l']['value'].split('/')[-1],
                 "sense_id": entry['sense']['value'].split('/')[-1],
-                "lemma": entry['lemma']['value'],
+                "lemma": entry['formRepresentation']['value'],
                 "categoryId": entry['category']['value'].split('/')[-1],
                 "categoryLabel": entry['categoryLabel']['value'],
                 "formId": entry['form']['value'].split('/')[-1]

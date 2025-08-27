@@ -165,7 +165,6 @@ lexeme_missing_audio_args.add_argument('lang_code', type=str, help="The language
 lexeme_missing_audio_args.add_argument('page_size', type=int, help="You may need to provide a page size")
 lexeme_missing_audio_args.add_argument('page', type=int, help="You may need to provide a page number")
 
-
 lexeme_response_fields = {
     'lexeme': fields.Nested({
         'id': fields.String,
@@ -385,7 +384,6 @@ class LexemesMissingAudioGet(Resource):
     @marshal_with(lexeMissingAudioFields)
     def post(self):
         args = lexeme_missing_audio_args.parse_args()
-        # TODO: Add arguments check
         if args['lang_wdqid'] is None or args['lang_code'] is None:
             abort(400, f'Please provide required parameters {str(list(args.keys()))}')
 
