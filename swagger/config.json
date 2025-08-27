@@ -914,26 +914,25 @@
           "auth"
         ],
         "summary": "Callback for Wikidata OAuth",
-        "parameters": [
-          {
-            "name": "oauth_verifier",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "example": "966f69de0024b50fd3c24ffa852062"
-            }
-          },
-          {
-            "name": "oauth_token",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "example": "1625f69de0024b50fd3c24ffa852536"
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "request_token": {
+                    "type": "string",
+                    "example": "{\"key\": \"6634447976938ujdjfyu7fb50e\", \"secret\": \"74b2f713480d2a7bdkhd73648859023c\"}"
+                  },
+                  "query_string": {
+                    "type": "string",
+                    "example": "oauth_verifier=2a9e4321e4b5c88jjd748778336&oauth_token=663444797837774dhdhd1daf8f7fb50e"
+                  }
+                }
+              }
             }
           }
-        ],
+        },
         "responses": {
           "200": {
             "description": "Callback successful",

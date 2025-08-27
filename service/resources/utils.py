@@ -44,7 +44,7 @@ def generate_csrf_token(url, app_key, app_secret, user_key, user_secret):
             'action': 'query',
             'meta': 'tokens',
             'format': 'json',
-        }, auth=auth)
+        }, auth=auth, headers=get_user_agent())
 
         token_request.raise_for_status()
         if 'error' in list(token_request.json().keys()):
@@ -58,6 +58,7 @@ def generate_csrf_token(url, app_key, app_secret, user_key, user_secret):
         return CSRF_TOKEN, auth
 
     except Exception as e:
+        print(str(e))
         return {
             'info': f'Unable to get csrf token check user edit tokens {str(e)}',
             'status_code': 503

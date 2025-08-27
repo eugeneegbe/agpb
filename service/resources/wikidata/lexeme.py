@@ -417,7 +417,6 @@ class LexemeTranslateAdd(Resource):
     @marshal_with(LexemeAudioAddFields)
     def post(self):
         request_body = request.get_json()
-        print(request_body)
         if not request_body:
             abort(400, 'Request body is empty')
 
@@ -444,9 +443,9 @@ class LexemeTranslateAdd(Resource):
         if not user:
             abort(401, 'User not found')
 
-        results = add_translation_to_lexeme(user.username, auth_obj, request_body)
+        results = add_translation_to_lexeme(user.username, auth_obj, request_body[0])
 
         if 'error' in results:
-            abort(503, results)
+            abort(503, results['error'])
 
-        return [], 200
+        return results, 200

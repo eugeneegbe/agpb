@@ -516,7 +516,7 @@ def add_gloss_to_lexeme_sense(lexeme_id, sense_id, gloss_language,
 
     try:
         # Step 5: Make the API call to edit the entity
-        response = requests.post(base_url, data=post_params, auth=auth).json()
+        response = requests.post(base_url, data=post_params, auth=auth, headers=get_user_agent()).json()
         
         if 'error' in response:
             error_info = response['error'].get('info', 'Unknown error')
@@ -575,7 +575,9 @@ def add_audio_to_lexeme(username, auth_object, audio_data):
             }
 
         try:
-            claim_response = requests.post(base_url, data=params, auth=api_auth_token)
+            claim_response = requests.post(base_url, data=params,
+                                           auth=api_auth_token,
+                                           headers=get_user_agent())
         except Exception as e:
             return {
                 'error': 'Upload failed' + str(e)
@@ -633,96 +635,112 @@ def add_audio_to_lexeme(username, auth_object, audio_data):
 
 
 def add_translation_to_lexeme(username, auth_object, data):
-    # data = [{
-    #     'categoryId': 'Q1084',
-    #     'is_new': True,
-    #     'base_lexeme': 'L3625-S1',
-    #     'translation_language': 'Q1860',
-    #     'translation_sense_id': 'L3625-S1',
-    #     'value': 'Mutter'}]
+    """
+    Adds a translation to a lexeme senses in Wikidata.
+    Parameters:
+        username (str): The username of the person creating the lexeme
+        auth_object (dict): The authentication object containing access tokens
+        data (dict): The translation data containing:
+                     - is_new (bool): Whether it's a new lexeme
+                     - translation_language (str): The language code of the translation
+                     - value (str): The value of the translation
+                     - categoryId (int): The ID of the lexical category
+                     - base_lexeme (str): The ID of the base lexeme to add the translation to
+                     - translation_sense_id (str): The ID of the sense to which the translation is added
+    Returns:
+        dict: A dictionary containing the results of the operation
+    """
+    csrf_token, api_auth = generate_csrf_token(base_url,
+                                               consumer_key,
+                                               consumer_secret,
+                                               auth_object['access_token'],
+                                               auth_object['access_secret'])
+    result_object = {}
+    lastrev_id = None
+    if bool(data['is_new']) is True:
+    # New Lexeme needs to be created then returned
+        _, _, lqid = get_language_qid(data['translation_language'])
 
-    csrf_token, api_auth_token = generate_csrf_token(base_url,
-                                                     consumer_key,
-                                                     consumer_secret,
-                                                     auth_object['access_token'],
-                                                     auth_object['access_secret'])
-    # Lexeme does not yet exist
-    if data['is_new']:
-        return {
-            'error': 'Adding non-existing lexemes is not supported yet',
-            'status_code': 401
+        lexeme_entry = {
+            'lemmas': {
+                data['translation_language']: {
+                    'language': data['translation_language'],
+                    'value': data['value']
+                }
+            },
+            'lexicalCategory': str(data['categoryId']),
+            'language': lqid
         }
 
-    params = {}
-    params['format'] = 'json'
-    params['token'] = csrf_token
-    params['action'] = 'wbcreateclaim'
-    params['entity'] = data['lexeme_id']
-    params['property'] = 'P5972'
-    params['snaktype'] = 'value'
-    params['value'] = data['translation_sense_id']
+        data = {}
+        data['action'] = 'wbeditentity'
+        data['new'] = 'lexeme'
 
-    try:
-        claim_response = requests.post(base_url, data=params, auth=api_auth_token)
-    except Exception as e:
-        return {
-            'error': 'Upload failed' + str(e)
-        }
+        data['token'] = csrf_token
+        data['format'] = 'json'
+        data['data'] = json.dumps(lexeme_entry)
 
-    if 'error' in claim_response.json().keys():
-        return {
-            'error': str(claim_response.json()['error']['code']
-                        .capitalize() + ': ' + claim_response.json()['error']['info']
-                        .capitalize())
-        }
+        response = requests.post(base_url, data=data, auth=api_auth, headers=get_user_agent()).json()
 
-    claim_result = claim_response.json()
-
-    # get language item here from lang_code
-    qualifier_value = data['translation_language']
-    qualifier_params = {}
-    qualifier_params['claim'] = claim_result['claim']['id']
-    qualifier_params['action'] = 'wbsetqualifier'
-    qualifier_params['property'] = 'P407'
-    qualifier_params['snaktype'] = 'value'
-    qualifier_params['value'] = json.dumps({'entity-type': 'item', 'id': qualifier_value})
-    qualifier_params['format'] = 'json'
-    qualifier_params['token'] = csrf_token
-
-    results = []
-    try:
-        qual_response = requests.post(base_url, data=qualifier_params,
-                                    auth=api_auth_token)
-        qualifier_params = qual_response.json()
-        
-        if qual_response.status_code != 200:
+        if 'error' in response:
             return {
-                'error': 'Translation could not be added',
+                'info': 'Unable to edit. Please check credentials',
+                'status_code': 503
+            }
+        lastrev_id = response['entity']['lastrevid']
+        result_object[response['entity']['id']] = lastrev_id
+
+    # Add the translation statement in either cases
+    if lastrev_id or bool(data['is_new']) is False:
+        
+        value = {
+            'entity-type': 'sense',
+            'id': data['translation_sense_id']
+        }
+        params = {
+            'format': 'json',
+            'token': csrf_token,
+            'action': 'wbcreateclaim',
+            'entity': data['base_lexeme'],
+            'property': 'P5972',
+            'snaktype': 'value',
+            'value': json.dumps(value)
+        }
+
+        try:
+            claim_response = requests.post(base_url, data=params, auth=api_auth, headers=get_user_agent())
+        except Exception as e:
+            return {
+                'error': 'Something went wrong!',
                 'status_code': 401
             }
-    
-        revision_id = qualifier_params.get('pageinfo').get('lastrevid', None)
+
+        if 'error' in claim_response.json().keys():
+            return {
+                'error': str(claim_response.json()['error']['code']
+                            .capitalize() + ': ' + claim_response.json()['error']['info']
+                            .capitalize())
+            }
+
+        results = []
+        revision_id = claim_response.json().get('pageinfo').get('lastrevid', None)
         results.append({
-            'lexeme_id': data['formid'].split('-')[0],
+            'lexeme_id': data['base_lexeme'].split('-')[0],
             'revisionid': revision_id
         })
 
         # Record contribution on tool
-        contribution = ContributionModel(wd_item=data['lexeme_id'],
+        contribution = ContributionModel(wd_item=data['base_lexeme'],
                                             username=username,
                                             lang_code=data['translation_language'],
-                                            edit_type='audio',
-                                            data=data['lexeme_id'] + '- P5927 -' + \
-                                                 data['translation_sense_id'] ,
+                                            edit_type='translation',
+                                            data=data['base_lexeme'] + '- P5927 -' + \
+                                                data['translation_sense_id'] ,
                                             date=datetime.datetime.now())
         db.session.add(contribution)
         db.session.commit()
 
-    except Exception as e:
-        db.session.rollback()
-        return {'error': 'Qualifier could not be added: ' + str(e)}
-
-    return {'results': results}
+        return {'results': results}
 
 
 def get_auth_object(consumer_key, consumer_secret, decoded_token):

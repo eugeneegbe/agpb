@@ -85,7 +85,7 @@ class AuthCallBackPost(Resource):
             token = jwt.encode({
                 'token': user.temp_token,
                 'access_token': dict(zip(access_token._fields, access_token)),
-                'exp': datetime.utcnow() + timedelta(minutes=60*24)
+                'exp': datetime.utcnow() + timedelta(minutes=60*60)
             }, consumer_secret, "HS256")
             
             return {
