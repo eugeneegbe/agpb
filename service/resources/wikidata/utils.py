@@ -79,12 +79,13 @@ def process_search_results(search_results, search, src_lang, ismatch_search):
 
     else:
         for res in search_results:
-            res_item = {}
-            res_item['id'] = res['id']
-            res_item['label'] = res['label']
-            res_item['language'] = src_lang
-            res_item['description'] = res['description']
-            lexeme_result.append(res_item)
+            if res['display']['label']['language'] == src_lang:
+                res_item = {}
+                res_item['id'] = res['id']
+                res_item['label'] = res['label']
+                res_item['language'] = src_lang
+                res_item['description'] = res['description']
+                lexeme_result.append(res_item)
 
     return lexeme_result
 
@@ -111,13 +112,7 @@ def lexemes_search(search, src_lang, ismatch):
     
     search_result_data = process_search_results(wd_search_results['search'],
                                                 search, src_lang, bool(ismatch))
-
-    
-    language_label = get_language_label(getLanguages(), src_lang).lower()
-    data = [item for item in search_result_data \
-            if language_label == item["description"].split()[0].lower().strip('(),')]
-
-    return data
+    return search_result_data
 
 
 def get_language_label(languages, code):
@@ -804,15 +799,26 @@ def get_lexeme_translations(lexeme_id, src_lang, lang_1, lang_2):
 
 def get_multiple_lexemes_data(lexemes_ids, src_lang,
                               lang_1, lang_2, matching_sense):
+    final_results = []
+    if lexemes_ids is None:
+        for lang in [src_lang, lang_1, lang_2]:
+            final_results.append({
+                'base_lexeme': matching_sense,
+                'lexeme_id': None,
+                'trans_sense_id': None,
+                'trans_language': lang,
+                'value': None
+            })
+        return final_results
+
     PARAMS = {
         'action': 'wbgetentities',
         'format': 'json',
         'languages': ','.join([src_lang, lang_1, lang_2]),
         'ids': '|'.join([id.split('-')[0] for id in lexemes_ids])
     }
-    result = make_api_request(base_url, PARAMS, get_user_agent())
 
-    final_results = []
+    result = make_api_request(base_url, PARAMS, get_user_agent())
     for lang in [src_lang, lang_1, lang_2]:
         match_struc = {}
         for id in lexemes_ids:
