@@ -75,7 +75,6 @@ def process_search_results(search_results, search,
                            src_lang, ismatch_search, with_sense):
     '''
     '''
-    print('with_sense', with_sense)
     src_match = {'type': 'label', 'language': src_lang, 'text': search}
     lexeme_result = []
     if ismatch_search:
@@ -799,6 +798,7 @@ def get_lexeme_translations(lexeme_id, src_lang, lang_1, lang_2):
     lexeme_data = result.get('entities', {}).get(lexeme_id)
     matching_sense =  next((sense for sense in lexeme_data.get('senses', [])
                  if sense.get('glosses', {}).get(src_lang)), None)
+    print('matching_sense', matching_sense)
     claims = matching_sense.get('claims', {}) if matching_sense else {}
 
     ids = None
@@ -808,7 +808,7 @@ def get_lexeme_translations(lexeme_id, src_lang, lang_1, lang_2):
 
     translation_data = get_multiple_lexemes_data(ids, src_lang,
                                                  lang_1, lang_2,
-                                                 matching_sense['id'])
+                                                 matching_sense['id'] if matching_sense else lexeme_id + '-S1')
     return translation_data
 
 
