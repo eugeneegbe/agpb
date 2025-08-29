@@ -391,7 +391,7 @@ def get_language_qid(lang_code):
     return None
 
 
-def translate_new_lexeme(translation_data, username, auth_obj):
+def describe_new_lexeme(description_data, username, auth_obj):
     '''
     Creates a new lexeme in Wikidata
     Parameters:
@@ -406,57 +406,19 @@ def translate_new_lexeme(translation_data, username, auth_obj):
                                            auth_obj['access_token'],
                                            auth_obj['access_secret'])
     result_object = {}
-    for trans_data in translation_data:
-
-        lastrev_id = None
-        if trans_data['is_new'] is True:
-        # New Lexeme needs to be created then returned
-            _, _, lqid = get_language_qid(trans_data['translation_language'])
-
-            lexeme_entry = {
-                'lemmas': {
-                    trans_data['translation_language']: {
-                        'language': trans_data['translation_language'],
-                        'value': trans_data['translation_value']
-                    }
-                },
-                'lexicalCategory': str(trans_data['categoryId']),
-                'language': lqid
-            }
-
-            data = {}
-            data['action'] = 'wbeditentity'
-            data['new'] = 'lexeme'
-
-            data['token'] = csrf_token
-            data['format'] = 'json'
-            data['data'] = json.dumps(lexeme_entry)
-
-            response = requests.post(base_url, data=data, auth=auth).json()
-
-            if 'error' in response:
-                return {
-                    'info': 'Unable to edit. Please check credentials',
-                    'status_code': 503
-                }
-            lastrev_id = response['entity']['lastrevid']
-            result_object[response['entity']['id']] = lastrev_id
-
-        if lastrev_id or bool(trans_data['is_new']) is False:
-            # Just add the gloss here
-            return add_gloss_to_lexeme_sense(trans_data['lexeme_id'],
-                                             trans_data['lexeme_sense_id'],
-                                             trans_data['translation_language'],
-                                             trans_data['translation_value'], username,
-                                             csrf_token, auth, result_object)
+    for trans_data in description_data:
+        return add_gloss_to_lexeme_sense(trans_data['lexeme_id'],
+                                            trans_data['description_language'],
+                                            trans_data['description_value'], username,
+                                            csrf_token, auth, result_object)
     return {
         'error': 'No edit was made please check the data',
         'status_code': 503
     }
 
 
-def add_gloss_to_lexeme_sense(lexeme_id, sense_id, gloss_language,
-                              gloss_value, username, csrf_token, auth, result_obj):
+def add_gloss_to_lexeme_sense(lexeme_id, gloss_language, gloss_value,
+                              username, csrf_token, auth, result_obj):
     """
     Adds a new gloss to an existing lexeme sense in Wikidata.
 
@@ -761,7 +723,7 @@ def get_auth_object(consumer_key, consumer_secret, decoded_token):
     }
 
 
-def validate_translation_request_body(request_body, schema):
+def validate_description_request_body(request_body, schema):
     try:
         validate(instance=request_body, schema=schema)
         return True

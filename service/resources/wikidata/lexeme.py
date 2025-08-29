@@ -6,10 +6,10 @@ from flask_restful import (Resource, reqparse,
                            fields, marshal_with)
 from service.require_token import token_required
 from .utils import (lexemes_search, get_lexeme_sense_glosses,
-                    translate_new_lexeme, get_lexemes_lacking_audio,
+                    describe_new_lexeme, get_lexemes_lacking_audio,
                     add_audio_to_lexeme, get_auth_object,
                     add_gloss_to_lexeme_sense,
-                    validate_translation_request_body,
+                    validate_description_request_body,
                     get_lexeme_translations,
                     add_translation_to_lexeme)
 from common import consumer_key, consumer_secret, prod_fe_url
@@ -39,37 +39,25 @@ lexeme_args.add_argument('lang_2', type=str, help="Provide the second language")
 lexeme_args.add_argument('ismatch', type=str, help="Match lexeme in language")
 lexeme_args.add_argument('with_sense', type=bool, help="Include lexeme senses")
 
-translation_schema = {
+description_schema = {
     "type": "array",
     "items": {
         "type": "object",
         "properties": {
-            "translation_language": {
+            "description_language": {
                 "type": "string",
                 "example": "ig"
             },
-            "translation_value": {
+            "value": {
                 "type": "string",
                 "example": "mother"
-            },
-            "categoryId": {
-                "type": "string",
-                "example": "Q1084"
             },
             "lexeme_id": {
                 "type": "string",
                 "example": "L3625"
-            },
-            "is_new": {
-                "type": "boolean",
-                "example": True
-            },
-            "lexeme_sense_id": {
-                "type": "string",
-                "example": "L3625-S1"
             }
         },
-        "required": ["translation_language", "translation_value", "categoryId", "lexeme_id", "is_new", "lexeme_sense_id"]
+        "required": ["description_language", "value", "lexeme_id"]
     }
 }
 
@@ -243,7 +231,7 @@ class LexemesGet(Resource):
         return lexemes, 200
 
 
-class LexemesTranslate(Resource):
+class LexemesDescriptionAdd(Resource):
     @token_required
     @marshal_with(lexeme_response_fields)
     def post(self, current_user):
@@ -251,7 +239,7 @@ class LexemesTranslate(Resource):
         if not request_body:
             abort(400, 'Request body is empty')
 
-        if not validate_translation_request_body(request_body, translation_schema):
+        if not validate_description_request_body(request_body, description_schema):
             abort(400, 'Invalid request body')
 
         # get request header token_required info
@@ -269,7 +257,7 @@ class LexemesTranslate(Resource):
         if not user:
             abort(401, 'User not found')
 
-        result = translate_new_lexeme(request_body, user.username, auth_obj)
+        result = describe_new_lexeme(request_body, user.username, auth_obj)
 
         if 'status_code' in result and result['status_code'] == 503:
             return result, result['status_code']

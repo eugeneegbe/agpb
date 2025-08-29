@@ -590,21 +590,9 @@
                       "type": "string",
                       "example": "mother"
                     },
-                    "categoryId": {
-                      "type": "string",
-                      "example": "Q1084"
-                    },
                     "lexeme_id": {
                       "type": "string",
                       "example": "L3625"
-                    },
-                    "is_new": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "lexeme_sense_id": {
-                      "type": "string",
-                      "example": "L3625-S1"
                     }
                   }
                 }
@@ -615,10 +603,7 @@
                     {
                       "translation_language": "ig",
                       "translation_value": "mother",
-                      "categoryId": "Q1084",
-                      "lexeme_id": "L3625",
-                      "is_new": true,
-                      "lexeme_sense_id": "L3625-S1"
+                      "lexeme_id": "L3625"
                     }
                   ]
                 }
