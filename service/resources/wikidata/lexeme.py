@@ -413,7 +413,7 @@ class LexemeTranslateAdd(Resource):
         if not request_body:
             abort(400, 'Request body is empty')
 
-        if not validate_translation_request_body(request_body, add_translation_schema):
+        if not validate_request_body_schema(request_body, add_translation_schema):
             abort(400, 'Invalid request body')
 
         # get request header token_required info
