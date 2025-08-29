@@ -724,7 +724,7 @@ def get_auth_object(consumer_key, consumer_secret, decoded_token):
     }
 
 
-def validate_description_request_body(request_body, schema):
+def validate_request_body_schema(request_body, schema):
     try:
         validate(instance=request_body, schema=schema)
         return True

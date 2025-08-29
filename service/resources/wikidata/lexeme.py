@@ -9,7 +9,7 @@ from .utils import (lexemes_search, get_lexeme_sense_glosses,
                     describe_new_lexeme, get_lexemes_lacking_audio,
                     add_audio_to_lexeme, get_auth_object,
                     add_gloss_to_lexeme_sense,
-                    validate_description_request_body,
+                    validate_request_body_schema,
                     get_lexeme_translations,
                     add_translation_to_lexeme)
 from common import consumer_key, consumer_secret, prod_fe_url
@@ -243,7 +243,7 @@ class LexemesDescriptionAdd(Resource):
         if not request_body:
             abort(400, 'Request body is empty')
 
-        if not validate_description_request_body(request_body, description_schema):
+        if not validate_request_body_schema(request_body, description_schema):
             abort(400, 'Invalid request body')
 
         # get request header token_required info
@@ -316,7 +316,7 @@ class LexemeAudioAdd(Resource):
         if not request_body:
             abort(400, 'Request body is empty')
 
-        if not validate_translation_request_body(request_body, add_audio_schema):
+        if not validate_request_body_schema(request_body, add_audio_schema):
             abort(400, 'Invalid request body')
 
         # get request header token_required info
