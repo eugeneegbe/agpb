@@ -44,7 +44,7 @@ description_schema = {
     "items": {
         "type": "object",
         "properties": {
-            "description_language": {
+            "language": {
                 "type": "string",
                 "example": "ig"
             },
@@ -57,7 +57,7 @@ description_schema = {
                 "example": "L3625"
             }
         },
-        "required": ["description_language", "value", "lexeme_id"]
+        "required": ["language", "value", "lexeme_id"]
     }
 }
 

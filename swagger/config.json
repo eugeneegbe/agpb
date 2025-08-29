@@ -582,11 +582,11 @@
                 "items": {
                   "type": "object",
                   "properties": {
-                    "translation_language": {
+                    "language": {
                       "type": "string",
                       "example": "ig"
                     },
-                    "translation_value": {
+                    "value": {
                       "type": "string",
                       "example": "mother"
                     },
@@ -601,8 +601,8 @@
                 "An example array of objects": {
                   "value": [
                     {
-                      "translation_language": "ig",
-                      "translation_value": "mother",
+                      "language": "ig",
+                      "value": "mother",
                       "lexeme_id": "L3625"
                     }
                   ]
