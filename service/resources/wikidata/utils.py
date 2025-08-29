@@ -71,9 +71,11 @@ def get_lexemes_lacking_audio(lang_qid, lang_code, page_size=15, page=1):
         }
 
 
-def process_search_results(search_results, search, src_lang, ismatch_search):
+def process_search_results(search_results, search,
+                           src_lang, ismatch_search, with_sense):
     '''
     '''
+    print('with_sense', with_sense)
     src_match = {'type': 'label', 'language': src_lang, 'text': search}
     lexeme_result = []
     if ismatch_search:
@@ -84,6 +86,7 @@ def process_search_results(search_results, search, src_lang, ismatch_search):
                 res_item['label'] = result['label']
                 res_item['language'] = src_lang
                 res_item['description'] = result['description']
+                res_item['sense_id'] = result['id'] + '-S1' if with_sense is True else None
                 lexeme_result.append(res_item)
 
     else:
@@ -94,12 +97,13 @@ def process_search_results(search_results, search, src_lang, ismatch_search):
                 res_item['label'] = res['label']
                 res_item['language'] = src_lang
                 res_item['description'] = res['description']
+                res_item['sense_id'] = res['id'] + '-S1' if with_sense is True else None
                 lexeme_result.append(res_item)
 
     return lexeme_result
 
 
-def lexemes_search(search, src_lang, ismatch):
+def lexemes_search(search, src_lang, ismatch, with_sense):
     '''
     '''
     PARAMS = {
@@ -120,7 +124,8 @@ def lexemes_search(search, src_lang, ismatch):
         return {'error': 'No search results found', 'status_code': 404}
     
     search_result_data = process_search_results(wd_search_results['search'],
-                                                search, src_lang, bool(ismatch))
+                                                search, src_lang, bool(ismatch),
+                                                bool(with_sense))
     return search_result_data
 
 

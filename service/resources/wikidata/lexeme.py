@@ -37,6 +37,7 @@ lexeme_args.add_argument('property', type=str, help="Provide a property to fetch
 lexeme_args.add_argument('lang_1', type=str, help="Provide the first language")
 lexeme_args.add_argument('lang_2', type=str, help="Provide the second language")
 lexeme_args.add_argument('ismatch', type=str, help="Match lexeme in language")
+lexeme_args.add_argument('with_sense', type=bool, help="Include lexeme senses")
 
 translation_schema = {
     "type": "array",
@@ -189,6 +190,7 @@ lexemeSearcFields = {
     'label': fields.String,
     'language': fields.String,
     'description': fields.String,
+    'sense_id': fields.String
 }
 
 LexemeGlossAddFields = {
@@ -233,7 +235,8 @@ class LexemesGet(Resource):
             abort(400, f'Please provide required parameters {str(list(args.keys()))}')
 
         lexemes = lexemes_search(args['search'], args['src_lang'],
-                                 ismatch=int(args['ismatch']))
+                                 ismatch=int(args['ismatch']),
+                                 with_sense=int(args['with_sense']))
         if type(lexemes) is not list:
             abort(lexemes['status_code'], lexemes)
 

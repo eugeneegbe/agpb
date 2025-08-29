@@ -533,6 +533,10 @@
                   "ismatch": {
                     "type": "int32",
                     "example": 1
+                  },
+                  "with_sense": {
+                    "type": "int32",
+                    "example": 1
                   }
                 }
               }
@@ -698,7 +702,7 @@
                 "An example array of objects": {
                   "value": [
                     {
-                      "lexeme_id": "L3625",
+                      "base_lexeme": "L3625-S1",
                       "translation_language": "Q1860",
                       "translation_sense_id": "L3625-S1",
                       "is_new": true,
@@ -1252,6 +1256,10 @@
           "language": {
             "type": "string",
             "example": "tr"
+          },
+          "sense_id": {
+            "type": "string",
+            "example": "L30601-S1"
           },
           "description": {
             "type": "string",
