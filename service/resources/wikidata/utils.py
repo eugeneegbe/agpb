@@ -235,6 +235,14 @@ def get_matching_form_id(lexeme_value, src_lang, forms):
                  if form.get('representations', {}).get(src_lang, {}).get('value') == lexeme_value), None)
 
 
+def get_lang_code_from_qid(q_id):
+    languages = getLanguages()
+    for code, name, qid in languages:
+        if qid == q_id:
+            return code
+    return None
+
+
 def get_matching_sense_id(src_lang, senses):
     """
     Returns the sense ID matching lexeme value in source language.
@@ -287,13 +295,15 @@ def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
             for audio_claim in claims['P443']:
                 qal = audio_claim['qualifiers'] if 'qualifiers' in audio_claim else None
                 form_id = form['id']
-                lang_qid = qal['P407'][0]['datavalue']['value']['id'] if qal else None
+                lang_qid = qal['P407'][0]['datavalue']['value']['id'] if 'P407' in qal else None
                 audio_value = audio_claim['mainsnak']['datavalue']['value']
                 # The assumption is that one form has one audio file.
-                if qal:
-                    form_audio_map[lang_qid] = get_wikimedia_commons_url(audio_value, commons_url)
-                else:
+                if get_lang_code_from_qid(lang_qid) in form['representations']:
                     form_audio_map[form_id] = get_wikimedia_commons_url(audio_value, commons_url)
+                    break
+                elif lang_qid:
+                    form_audio_map[lang_qid] = get_wikimedia_commons_url(audio_value, commons_url)
+
 
     # Add other entries for senses
     senses = lexeme_data.get('senses', [])
@@ -798,7 +808,7 @@ def get_lexeme_translations(lexeme_id, src_lang, lang_1, lang_2):
     lexeme_data = result.get('entities', {}).get(lexeme_id)
     matching_sense =  next((sense for sense in lexeme_data.get('senses', [])
                  if sense.get('glosses', {}).get(src_lang)), None)
-    print('matching_sense', matching_sense)
+
     claims = matching_sense.get('claims', {}) if matching_sense else {}
 
     ids = None
