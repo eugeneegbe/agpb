@@ -147,14 +147,40 @@ def get_language_label(languages, code):
     return None
 
 
-def get_item_label(id):
-    client = Client()
+def get_item_label(item_id, lang_code="en"):
+    """
+    Fetches the label for a given Wikidata item ID using the Query Service.
+    
+    Args:
+        item_id (str): The Wikidata item ID (e.g., 'Q146199').
+        lang_code (str): The language code for the label (e.g., 'en', 'de', 'fr').
+        
+    Returns:
+        str or None: The label if found, otherwise None.
+    """
+    query = f"""
+    SELECT ?item ?itemLabel WHERE {{
+      VALUES ?item {{ wd:{item_id} }}
+      SERVICE wikibase:label {{ bd:serviceParam wikibase:language "{lang_code}". }}
+    }}
+    """
+    
+    # Wikidata Query Service API endpoint
+    user_agent = "AGPB/%s.%s" % (sys.version_info[0], sys.version_info[1])
+    sparql = SPARQLWrapper(sparql_endpoint_url, agent=user_agent)
+    sparql.setQuery(query)
+    sparql.setReturnFormat(JSON)
+    result = sparql.query().convert()
     try:
-        entity = client.get(id, load=True)
-        if entity.label:
-            return entity.label
-    except Exception as e:
-        print(str(e))
+        bindings = result.get("results", {}).get("bindings", [])
+
+        # Parse the JSON response to get the label
+        if bindings:
+            return bindings[0].get("itemLabel", {}).get("value")
+            
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching data: {e}")
+
     return None
 
 
@@ -239,7 +265,7 @@ def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
     processed_data['lexeme'] = {
         'id': lexeme_data['id'],
         'lexicalCategoryId': lexeme_data['lexicalCategory'],
-        'lexicalCategoryLabel': get_item_label(lexeme_data['lexicalCategory']),
+        'lexicalCategoryLabel': get_item_label(lexeme_data['lexicalCategory'], src_lang),
         'image': media
     }
 
@@ -260,10 +286,15 @@ def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
         claims = form.get('claims')
         if claims and 'P443' in claims:
             for audio_claim in claims['P443']:
+                qal = audio_claim['qualifiers'] if 'qualifiers' in audio_claim else None
+                form_id = form['id']
+                lang_qid = qal['P407'][0]['datavalue']['value']['id'] if qal else None
                 audio_value = audio_claim['mainsnak']['datavalue']['value']
                 # The assumption is that one form has one audio file.
-                form_audio_map[form['id']] = get_wikimedia_commons_url(audio_value, commons_url)
-                break
+                if qal:
+                    form_audio_map[lang_qid] = get_wikimedia_commons_url(audio_value, commons_url)
+                else:
+                    form_audio_map[form_id] = get_wikimedia_commons_url(audio_value, commons_url)
 
     # Add other entries for senses
     senses = lexeme_data.get('senses', [])
@@ -284,13 +315,20 @@ def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
                 'senseId': senses[0]['id'],
                 'gloss': get_default_gloss(lang)
             })
-            
+
     # Add audio to the glosses based on the pre-built map
     for sense_gloss in processed_data['glosses']:
+        language = sense_gloss['gloss'].get('language')
+        lang_qid = next((qid for code, _, qid in getLanguages() if code == language), None)
         form_id = sense_gloss['gloss'].get('formId')
-        audio_url = form_audio_map.get(form_id)
-        if audio_url:
+        if form_id in form_audio_map:
+            audio_url = form_audio_map.get(form_id)
             sense_gloss['gloss']['audio'] = audio_url
+            break
+        elif lang_qid and lang_qid in form_audio_map:
+            audio_url = form_audio_map.get(lang_qid) 
+   
+            
 
     return processed_data
 
