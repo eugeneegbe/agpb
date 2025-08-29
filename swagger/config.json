@@ -593,6 +593,10 @@
                     "lexeme_id": {
                       "type": "string",
                       "example": "L3625"
+                    },
+                    "sense_id": {
+                      "type": "string",
+                      "example": "L3625-S1"
                     }
                   }
                 }
@@ -603,7 +607,8 @@
                     {
                       "language": "ig",
                       "value": "mother",
-                      "lexeme_id": "L3625"
+                      "lexeme_id": "L3625",
+                      "sense_id": "L3625-S1"
                     }
                   ]
                 }

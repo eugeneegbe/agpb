@@ -406,18 +406,19 @@ def describe_new_lexeme(description_data, username, auth_obj):
                                            auth_obj['access_token'],
                                            auth_obj['access_secret'])
     result_object = {}
-    for trans_data in description_data:
-        return add_gloss_to_lexeme_sense(trans_data['lexeme_id'],
-                                            trans_data['language'],
-                                            trans_data['value'], username,
-                                            csrf_token, auth, result_object)
+    for desc_data in description_data:
+        return add_gloss_to_lexeme_sense(desc_data['lexeme_id'],
+                                         desc_data['sense_id'],
+                                         desc_data['language'],
+                                         desc_data['value'], username,
+                                         csrf_token, auth, result_object)
     return {
         'error': 'No edit was made please check the data',
         'status_code': 503
     }
 
 
-def add_gloss_to_lexeme_sense(lexeme_id, gloss_language, gloss_value,
+def add_gloss_to_lexeme_sense(lexeme_id, sense_id, gloss_language, gloss_value,
                               username, csrf_token, auth, result_obj):
     """
     Adds a new gloss to an existing lexeme sense in Wikidata.

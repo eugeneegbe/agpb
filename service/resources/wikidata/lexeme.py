@@ -48,6 +48,10 @@ description_schema = {
                 "type": "string",
                 "example": "ig"
             },
+            "sense_id": {
+                "type": "string",
+                "example": "L3625-S1"
+            },
             "value": {
                 "type": "string",
                 "example": "mother"
@@ -57,7 +61,7 @@ description_schema = {
                 "example": "L3625"
             }
         },
-        "required": ["language", "value", "lexeme_id"]
+        "required": ["language", "value", "lexeme_id", "sense_id"]
     }
 }
 
