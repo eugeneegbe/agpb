@@ -408,8 +408,8 @@ def describe_new_lexeme(description_data, username, auth_obj):
     result_object = {}
     for trans_data in description_data:
         return add_gloss_to_lexeme_sense(trans_data['lexeme_id'],
-                                            trans_data['description_language'],
-                                            trans_data['description_value'], username,
+                                            trans_data['language'],
+                                            trans_data['value'], username,
                                             csrf_token, auth, result_object)
     return {
         'error': 'No edit was made please check the data',
