@@ -295,7 +295,9 @@ def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
             for audio_claim in claims['P443']:
                 qal = audio_claim['qualifiers'] if 'qualifiers' in audio_claim else None
                 form_id = form['id']
-                lang_qid = qal['P407'][0]['datavalue']['value']['id'] if 'P407' in qal else None
+                lang_qid = None
+                if qal and 'P407' in qal:
+                    lang_qid = qal['P407'][0]['datavalue']['value']['id']
                 audio_value = audio_claim['mainsnak']['datavalue']['value']
                 # The assumption is that one form has one audio file.
                 if get_lang_code_from_qid(lang_qid) in form['representations']:
