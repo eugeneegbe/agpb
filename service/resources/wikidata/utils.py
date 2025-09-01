@@ -327,7 +327,6 @@ def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
                     })
                     found_gloss = True
                     break
-                else:
             if not found_gloss and senses:
                 # If no gloss found for the language, add a default for the first sense
                 processed_data['glosses'].append({
