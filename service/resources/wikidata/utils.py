@@ -300,12 +300,8 @@ def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
                     lang_qid = qal['P407'][0]['datavalue']['value']['id']
                 audio_value = audio_claim['mainsnak']['datavalue']['value']
                 # The assumption is that one form has one audio file.
-                if get_lang_code_from_qid(lang_qid) in form['representations']:
-                    form_audio_map[form_id] = get_wikimedia_commons_url(audio_value, commons_url)
-                    break
-                elif lang_qid:
+                if lang_qid:
                     form_audio_map[lang_qid] = get_wikimedia_commons_url(audio_value, commons_url)
-
 
     # Add other entries for senses
     senses = lexeme_data.get('senses', [])
@@ -338,13 +334,9 @@ def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
     for sense_gloss in processed_data['glosses']:
         language = sense_gloss['gloss'].get('language')
         lang_qid = next((qid for code, _, qid in getLanguages() if code == language), None)
-        form_id = sense_gloss['gloss'].get('formId')
-        if form_id in form_audio_map:
-            audio_url = form_audio_map.get(form_id)
-            sense_gloss['gloss']['audio'] = audio_url
-            break
-        elif lang_qid and lang_qid in form_audio_map:
+        if lang_qid and lang_qid in form_audio_map:
             audio_url = form_audio_map.get(lang_qid) 
+            sense_gloss['gloss']['audio'] = audio_url
 
     return processed_data
 
