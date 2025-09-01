@@ -309,23 +309,31 @@ def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
 
     # Add other entries for senses
     senses = lexeme_data.get('senses', [])
-    for lang in [lang_1, lang_2]:
-        found_gloss = False
-        for sense in senses:
-            sense_gloss = sense.get('glosses', {}).get(lang)
-            if sense_gloss:
-                processed_data['glosses'].append({
-                    'senseId': sense['id'],
-                    'gloss': sense_gloss
-                })
-                found_gloss = True
-                break
-        if not found_gloss and senses:
-            # If no gloss found for the language, add a default for the first sense
+    if len(senses) == 0:
+        for lang in [lang_1, lang_2]:
             processed_data['glosses'].append({
-                'senseId': senses[0]['id'],
+                'senseId': None,
                 'gloss': get_default_gloss(lang)
             })
+    else:
+        for lang in [lang_1, lang_2]:
+            found_gloss = False
+            for sense in senses:
+                sense_gloss = sense.get('glosses', {}).get(lang)
+                if sense_gloss:
+                    processed_data['glosses'].append({
+                        'senseId': sense['id'],
+                        'gloss': sense_gloss
+                    })
+                    found_gloss = True
+                    break
+                else:
+            if not found_gloss and senses:
+                # If no gloss found for the language, add a default for the first sense
+                processed_data['glosses'].append({
+                    'senseId': senses[0]['id'],
+                    'gloss': get_default_gloss(lang)
+                })
 
     # Add audio to the glosses based on the pre-built map
     for sense_gloss in processed_data['glosses']:
@@ -338,8 +346,6 @@ def process_lexeme_sense_data(lexeme_data, src_lang, lang_1, lang_2, image):
             break
         elif lang_qid and lang_qid in form_audio_map:
             audio_url = form_audio_map.get(lang_qid) 
-   
-            
 
     return processed_data
 
